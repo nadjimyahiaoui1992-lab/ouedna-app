@@ -2,8 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:souf_tour/app/souf_tour_app.dart';
 
 void main() {
-  testWidgets('affiche le parcours d’exploration sans configuration distante',
-      (tester) async {
+  testWidgets('affiche le parcours Souf360 sans connexion', (tester) async {
     await tester.pumpWidget(
       const SoufTourApp(
         placeRepository: null,
@@ -13,8 +12,8 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('El Oued, autrement'), findsOneWidget);
-    expect(find.text('Guide IA'), findsOneWidget);
-    expect(find.textContaining('Mode démonstration'), findsOneWidget);
+    expect(find.text('اكتشف سوف'), findsOneWidget);
+    expect(find.text('دليل سوف'), findsOneWidget);
+    expect(find.textContaining('تعذر الاتصال بمنصة Souf360'), findsOneWidget);
   });
 }

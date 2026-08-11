@@ -12,12 +12,13 @@ Future<void> main() async {
   SupabasePlaceRepository? placeRepository;
   SupabaseTourGuideRepository? tourGuideRepository;
 
-  if (AppConfig.isSupabaseConfigured) {
+  try {
     await Supabase.initialize(
       url: AppConfig.supabaseUrl,
       publishableKey: AppConfig.supabasePublishableKey,
       authOptions: const FlutterAuthClientOptions(autoRefreshToken: true),
     );
+
     final client = Supabase.instance.client;
     placeRepository = SupabasePlaceRepository(client);
 
@@ -28,17 +29,19 @@ Future<void> main() async {
       if (client.auth.currentSession != null) {
         tourGuideRepository = SupabaseTourGuideRepository(client);
       }
-    } on AuthException {
-      // The application remains readable if anonymous sign-ins are disabled.
-      // The guide tab explains that it is unavailable until the server is configured.
+    } catch (_) {
+      // Browsing Souf360 landmarks remains available when anonymous auth is off
+      // or when a device is temporarily offline.
     }
+  } catch (_) {
+    // The app must always reach a usable screen, even if backend startup fails.
   }
 
   runApp(
     SoufTourApp(
       placeRepository: placeRepository,
       tourGuideRepository: tourGuideRepository,
-      isBackendConfigured: AppConfig.isSupabaseConfigured,
+      isBackendConfigured: placeRepository != null,
     ),
   );
 }

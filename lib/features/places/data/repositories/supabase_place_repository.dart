@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/errors/app_exception.dart';
@@ -42,15 +44,34 @@ class SupabasePlaceRepository implements PlaceRepository {
           .toList(growable: false);
     } on PostgrestException catch (error) {
       throw AppException(
-        'Les lieux ne sont pas accessibles pour le moment. Réessayez plus tard.',
+        'تعذر الوصول إلى معالم سوف 360 حالياً.',
         cause: error.code,
       );
     } catch (error) {
       throw AppException(
-        'Impossible de charger les lieux touristiques.',
+        'تعذر تحميل المعالم السياحية.',
         cause: error.runtimeType,
       );
     }
+  }
+
+  @override
+  Stream<void> watchPublishedPlaces() {
+    final controller = StreamController<void>.broadcast();
+    final channel = _client
+        .channel('souf-tour-places-${DateTime.now().microsecondsSinceEpoch}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'places',
+          callback: (_) {
+            if (!controller.isClosed) controller.add(null);
+          },
+        )
+        .subscribe();
+
+    controller.onCancel = () => _client.removeChannel(channel);
+    return controller.stream;
   }
 
   String _escapeLike(String value) => value.replaceAll(RegExp(r'[%_(),]'), ' ');

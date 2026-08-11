@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../core/theme/app_theme.dart';
 import '../features/explore/presentation/explore_page.dart';
@@ -38,8 +39,11 @@ class _SoufTourAppState extends State<SoufTourApp> {
     ];
 
     return MaterialApp(
-      title: 'Souf Tour',
+      title: 'سوف 360',
       debugShowCheckedModeBanner: false,
+      locale: const Locale('ar'),
+      supportedLocales: const [Locale('ar')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: AppTheme.light(),
       home: Scaffold(
         body: IndexedStack(index: _selectedIndex, children: pages),
@@ -51,17 +55,17 @@ class _SoufTourAppState extends State<SoufTourApp> {
             NavigationDestination(
               icon: Icon(Icons.explore_outlined),
               selectedIcon: Icon(Icons.explore),
-              label: 'Explorer',
+              label: 'استكشف',
             ),
             NavigationDestination(
               icon: Icon(Icons.auto_awesome_outlined),
               selectedIcon: Icon(Icons.auto_awesome),
-              label: 'Guide IA',
+              label: 'دليل سوف',
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline),
               selectedIcon: Icon(Icons.person),
-              label: 'Profil',
+              label: 'المزيد',
             ),
           ],
         ),

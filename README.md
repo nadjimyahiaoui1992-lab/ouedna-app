@@ -51,6 +51,18 @@ La fonction contrôle la taille des requêtes, refuse certains motifs de donnée
 
 > Le guide fournit une aide de découverte. Les horaires, tarifs, transports et conditions de visite doivent être confirmés auprès des établissements ou autorités locales.
 
+## Intégration Souf360
+
+**Souf360** est la surface de gestion : les administrateurs y ajoutent, corrigent, publient et géolocalisent les المعالم. **Souf Tour** est l’application Android grand public : elle ne contient aucune interface d’administration et consomme uniquement le catalogue public soumis aux politiques RLS.
+
+| Événement dans Souf360 | Effet dans Souf Tour |
+| --- | --- |
+| Un administrateur ajoute ou modifie un lieu | Le changement est enregistré dans `public.places`. |
+| Le statut du lieu devient `منشور` | Le lieu devient lisible par les visiteurs conformément à la politique RLS. |
+| La table `places` émet un changement | L’application reçoit le signal Realtime puis recharge la liste publiée automatiquement. |
+
+L’application est configurée par défaut pour lire le même projet public que [Souf360](https://souf360.vercel.app). Les paramètres de développement peuvent encore être remplacés par `SUPABASE_URL` et `SUPABASE_PUBLISHABLE_KEY`, mais aucune clé de service n’est embarquée dans l’APK.
+
 ## Provenance des médias
 
 Le dépôt ne contient plus aucun média photographique, vidéo ou audio issu de l’ancien modèle Palghar/Vasai ni aucune icône Flutter générique. L’interface exploite une dégradation visuelle explicite lorsqu’aucune image **authentifiée pour El Oued** n’est disponible. Les constats détaillés sont conservés dans [`docs/media_audit_notes.md`](docs/media_audit_notes.md).
@@ -109,3 +121,4 @@ git push origin v1.1.0
 [1]: https://supabase.com/docs/guides/api/securing-your-api "Supabase — Securing your API"
 [2]: https://supabase.com/docs/guides/auth/password-security "Supabase — Password security"
 [3]: https://supabase.com/docs/guides/storage/management/delete-objects "Supabase — Delete Storage objects"
+[4]: https://supabase.com/docs/guides/realtime/postgres-changes "Supabase — Postgres Changes"

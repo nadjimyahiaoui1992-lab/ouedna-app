@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../core/config/app_config.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -9,7 +12,7 @@ class ProfilePage extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           children: [
             Text(
-              'Votre espace',
+              'دليلك لزيارة سوف',
               style: Theme.of(context)
                   .textTheme
                   .headlineMedium
@@ -17,7 +20,7 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Souf Tour est conçu pour une découverte respectueuse et informée du territoire.',
+              'Souf Tour تطبيق مخصص للزوار. تُدار المعالم والصور والمعلومات المنشورة من منصة Souf360 وتصل إلى التطبيق تلقائياً.',
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 24),
@@ -35,11 +38,14 @@ class ProfilePage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Explorateur Souf',
-                              style: Theme.of(context).textTheme.titleMedium),
+                          Text(
+                            'زائر Souf Tour',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
                           const SizedBox(height: 4),
                           const Text(
-                              'Aucun compte personnel n’est requis pour consulter les lieux publics.'),
+                            'لا يلزم إنشاء حساب لاستكشاف المعالم والمعلومات العامة المنشورة.',
+                          ),
                         ],
                       ),
                     ),
@@ -48,19 +54,28 @@ class ProfilePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 18),
+            ListTile(
+              leading: const Icon(Icons.language_outlined),
+              title: const Text('فتح منصة Souf360'),
+              subtitle: const Text('الخريطة والمعالم والخدمات المحدثة'),
+              trailing: const Icon(Icons.open_in_new),
+              onTap: () => launchUrl(
+                Uri.parse(AppConfig.siteUrl),
+                mode: LaunchMode.externalApplication,
+              ),
+            ),
+            const Divider(height: 1),
             const _PrivacyTile(),
             const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.info_outline),
-              title: const Text('À propos de Souf Tour'),
-              subtitle: const Text(
-                  'Informations culturelles et suggestions de découverte.'),
+              title: const Text('حول Souf Tour'),
+              subtitle: const Text('دليل سياحي رقمي لمدينة وادي سوف.'),
               onTap: () => showAboutDialog(
                 context: context,
                 applicationName: 'Souf Tour',
-                applicationVersion: '1.1.0',
-                applicationLegalese:
-                    'Application de tourisme dédiée à El Oued.',
+                applicationVersion: '1.2.0',
+                applicationLegalese: 'تطبيق سياحي مخصص لزوار وادي سوف.',
               ),
             ),
           ],
@@ -74,8 +89,9 @@ class _PrivacyTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const ListTile(
         leading: Icon(Icons.shield_outlined),
-        title: Text('Confidentialité par conception'),
+        title: Text('خصوصية افتراضية'),
         subtitle: Text(
-            'Les conversations du guide ne doivent pas inclure de données personnelles sensibles.'),
+          'التطبيق يقرأ المعالم العامة المنشورة فقط. لا تشارك بيانات شخصية حساسة مع الدليل الذكي.',
+        ),
       );
 }

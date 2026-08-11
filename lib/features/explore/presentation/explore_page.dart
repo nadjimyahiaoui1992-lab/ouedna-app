@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../places/domain/entities/place.dart';
 import '../../places/domain/repositories/place_repository.dart';
 
@@ -23,15 +27,23 @@ class _ExplorePageState extends State<ExplorePage> {
   List<Place> _places = const [];
   Object? _error;
   var _isLoading = false;
+  StreamSubscription<void>? _placesSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadPlaces();
+    final repository = widget.placeRepository;
+    if (repository != null) {
+      _placesSubscription = repository.watchPublishedPlaces().listen((_) {
+        _loadPlaces(query: _searchController.text);
+      });
+    }
   }
 
   @override
   void dispose() {
+    _placesSubscription?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -70,7 +82,7 @@ class _ExplorePageState extends State<ExplorePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'El Oued, autrement',
+                      'اكتشف سوف',
                       style:
                           Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.w800,
@@ -78,7 +90,7 @@ class _ExplorePageState extends State<ExplorePage> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Préparez une visite attentive des lieux, des savoir-faire et des paysages du Souf.',
+                      'دليلك الرقمي لاكتشاف معالم وادي سوف، غيطانه ونخيله وكثبانه الذهبية.',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: scheme.onSurfaceVariant,
                           ),
@@ -89,10 +101,10 @@ class _ExplorePageState extends State<ExplorePage> {
                       textInputAction: TextInputAction.search,
                       onSubmitted: (value) => _loadPlaces(query: value),
                       decoration: InputDecoration(
-                        hintText: 'Rechercher un lieu ou une ambiance',
+                        hintText: 'ابحث عن معلم أو مكان في وادي سوف',
                         prefixIcon: const Icon(Icons.search),
                         suffixIcon: IconButton(
-                          tooltip: 'Effacer la recherche',
+                          tooltip: 'مسح البحث',
                           onPressed: () {
                             _searchController.clear();
                             _loadPlaces();
@@ -105,7 +117,7 @@ class _ExplorePageState extends State<ExplorePage> {
                     const _DiscoveryBanner(),
                     const SizedBox(height: 24),
                     Text(
-                      'Lieux à découvrir',
+                      'المعالم السياحية',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w800,
                           ),
@@ -175,7 +187,7 @@ class _DiscoveryBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Voyager avec justesse',
+                    'سوف 360 — دليلك الرقمي',
                     style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -183,7 +195,7 @@ class _DiscoveryBanner extends StatelessWidget {
                   ),
                   SizedBox(height: 5),
                   Text(
-                    'Vérifiez les horaires et privilégiez les heures fraîches. Le guide IA peut vous aider à organiser votre parcours.',
+                    'اكتشف المعالم الموثقة، ثم افتح خريطة المنصة للوصول إلى الموقع والملاحة.',
                     style: TextStyle(color: Colors.white, height: 1.35),
                   ),
                 ],
@@ -210,7 +222,7 @@ class _ConfigurationNotice extends StatelessWidget {
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Mode démonstration : injectez SUPABASE_URL et SUPABASE_PUBLISHABLE_KEY pour afficher les lieux publiés.',
+                  'تعذر الاتصال بمنصة Souf360. تحقق من الإنترنت ثم أعد المحاولة.',
                 ),
               ),
             ],
@@ -233,10 +245,10 @@ class _ErrorNotice extends StatelessWidget {
             children: [
               const Icon(Icons.cloud_off_outlined),
               const SizedBox(width: 12),
-              const Expanded(
-                  child: Text('Les contenus sont indisponibles actuellement.')),
+              const Expanded(child: Text('تعذر تحميل بيانات Souf360 حالياً.')),
               TextButton(
-                  onPressed: () => onRetry(), child: const Text('Réessayer')),
+                  onPressed: () => onRetry(),
+                  child: const Text('إعادة المحاولة')),
             ],
           ),
         ),
@@ -250,7 +262,7 @@ class _EmptyPlaces extends StatelessWidget {
   Widget build(BuildContext context) => const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
-          child: Text('Aucun lieu ne correspond à cette recherche.'),
+          child: Text('لا توجد معالم مطابقة لبحثك.'),
         ),
       );
 }
@@ -359,9 +371,14 @@ class _PlaceCard extends StatelessWidget {
               ],
               const SizedBox(height: 20),
               FilledButton.icon(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.auto_awesome),
-                label: const Text('Demander au guide IA'),
+                onPressed: () async {
+                  await launchUrl(
+                    Uri.parse('${AppConfig.siteUrl}/map'),
+                    mode: LaunchMode.externalApplication,
+                  );
+                },
+                icon: const Icon(Icons.map_outlined),
+                label: const Text('فتح خريطة Souf360'),
               ),
             ],
           ),
