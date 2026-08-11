@@ -24,6 +24,13 @@ jobs:
           flutter-version: '3.24.5'
           channel: 'stable'
 
+      - name: Create env.json from secrets
+        run: |
+          echo "{" > assets/env.json
+          echo "  \"SUPABASE_URL\": \"${{ secrets.SUPABASE_URL }}\"," >> assets/env.json
+          echo "  \"SUPABASE_ANON_KEY\": \"${{ secrets.SUPABASE_ANON_KEY }}\"" >> assets/env.json
+          echo "}" >> assets/env.json
+
       - name: Clean Flutter project
         run: flutter clean
 
@@ -38,11 +45,3 @@ jobs:
         with:
           name: app-debug
           path: build/app/outputs/flutter-apk/app-debug.apk
-
-- name: Create env.json from secrets
-  run: |
-    echo '{' > assets/env.json
-    echo '  "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",' >> assets/env.json
-    echo '  "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}"' >> assets/env.json
-    echo '}' >> assets/env.json
-
