@@ -5,57 +5,76 @@ plugins {
 }
 
 def localProperties = new Properties()
-def localPropertiesFile = rootProject.file("local.properties")
+def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader("UTF-8") { reader ->
+    localPropertiesFile.withReader('UTF-8') { reader ->
         localProperties.load(reader)
     }
 }
 
-def flutterVersionCode = localProperties.getProperty("flutter.versionCode")
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
-    flutterVersionCode = "1"
+    flutterVersionCode = '1'
 }
 
-def flutterVersionName = localProperties.getProperty("flutter.versionName")
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
-    flutterVersionName = "1.0"
+    flutterVersionName = '1.0'
 }
 
 android {
-    namespace "com.souftour.app"
-    compileSdk 34
+    namespace "com.souf360.app"
+    compileSdk = 36
+    ndkVersion "28.2.13676358"
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = '1.8'
     }
 
     sourceSets {
-        main.java.srcDirs += "src/main/kotlin"
+        main.java.srcDirs += 'src/main/kotlin'
     }
 
     defaultConfig {
-        applicationId "com.souftour.app"
-        minSdk 21
-        targetSdk 34
+        applicationId "com.souf360.app"
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter build apk` works.
             signingConfig signingConfigs.debug
         }
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.browser:browser:1.8.0'
+        force 'androidx.core:core-ktx:1.15.0'
+        force 'androidx.core:core:1.15.0'
+    }
+}
+
 flutter {
-    source "../.."
+    source '../..'
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10"
+}
+
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.browser:browser:1.8.0'
+        force 'androidx.core:core-ktx:1.15.0'
+        force 'androidx.core:core:1.15.0'
+    }
 }
