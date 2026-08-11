@@ -1,19 +1,44 @@
-import 'package:flutter/material.dart';
-import 'pages/home_page.dart';
+import 'package:flutter/widgets.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() => runApp(MyApp());
+import 'app/souf_tour_app.dart';
+import 'core/config/app_config.dart';
+import 'features/places/data/repositories/supabase_place_repository.dart';
+import 'features/tour_guide/data/repositories/supabase_tour_guide_repository.dart';
 
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Souf Tour',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: Colors.orangeAccent[700],
-        scaffoldBackgroundColor: Colors.blue[100],
-      ),
-      home: HomePage(),
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  SupabasePlaceRepository? placeRepository;
+  SupabaseTourGuideRepository? tourGuideRepository;
+
+  if (AppConfig.isSupabaseConfigured) {
+    await Supabase.initialize(
+      url: AppConfig.supabaseUrl,
+      publishableKey: AppConfig.supabasePublishableKey,
+      authOptions: const FlutterAuthClientOptions(autoRefreshToken: true),
     );
+    final client = Supabase.instance.client;
+    placeRepository = SupabasePlaceRepository(client);
+
+    try {
+      if (client.auth.currentSession == null) {
+        await client.auth.signInAnonymously();
+      }
+      if (client.auth.currentSession != null) {
+        tourGuideRepository = SupabaseTourGuideRepository(client);
+      }
+    } on AuthException {
+      // The application remains readable if anonymous sign-ins are disabled.
+      // The guide tab explains that it is unavailable until the server is configured.
+    }
   }
+
+  runApp(
+    SoufTourApp(
+      placeRepository: placeRepository,
+      tourGuideRepository: tourGuideRepository,
+      isBackendConfigured: AppConfig.isSupabaseConfigured,
+    ),
+  );
 }

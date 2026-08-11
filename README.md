@@ -1,156 +1,111 @@
+# Souf Tour
 
+**Souf Tour** est une application Flutter Android de découverte culturelle et touristique d’El Oued. Elle associe une exploration de lieux publiés à un guide conversationnel exécuté côté serveur afin que les clés du fournisseur IA ne soient jamais incluses dans l’APK.
 
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
+| Domaine | Choix de production |
+| --- | --- |
+| Client mobile | Flutter, Dart 3 et Material Design 3 |
+| Données | Supabase avec RLS, privilèges explicites et contenus publiés seulement |
+| Guide IA | Supabase Edge Function authentifiée, limitation par utilisateur et contexte des lieux publiés |
+| Android | Java 17, AGP 8.5.2, Gradle 8.7, SDK cible 35 |
+| Livraison | Analyse, tests, APK de validation et workflow de release GitHub |
 
+## Architecture
 
+Le code suit une séparation pragmatique inspirée de **Clean Architecture**. Les entités et contrats de dépôt sont dans `domain`, les adaptations Supabase dans `data`, et les écrans Flutter dans `presentation`. Cette frontière permet de tester l’application sans réseau et d’éviter que les widgets dépendent directement du SDK de données.
 
-<!-- PROJECT LOGO -->
-<br />
-<p align="center">
-  <a href="https://github.com/sahilkargutkar/palghar-tourism">
-    <img src="" alt="Logo" width="80" height="80">
-  </a>
+```text
+lib/
+├── app/                         # Composition et navigation de l’application
+├── core/                        # Configuration, erreurs et thème partagé
+└── features/
+    ├── places/                  # Consultation des lieux publiés
+    ├── explore/                 # Parcours d’exploration Material 3
+    ├── tour_guide/              # Conversation avec l’Edge Function
+    └── profile/                 # Transparence et confidentialité
+```
 
-  <h3 align="center">Palghar Tourism</h3>
+## Démarrage local
 
-  <p align="center">
-    project_description
-    <br />
-    <a href="https://github.com/sahilkargutkar/palghar-tourism"><strong>Explore the docs »</strong></a>
-    <br />
-    <br />
-    <a href="https://github.com/sahilkargutkar/palghar-tourism">View Demo</a>
-    ·
-    <a href="https://github.com/sahilkargutkar/palghar-tourism">Report Bug</a>
-    ·
-    <a href="https://github.com/sahilkargutkar/palghar-tourism">Request Feature</a>
-  </p>
-</p>
+La consultation des écrans peut fonctionner sans backend, en mode démonstration. Pour activer les données et le guide, transmettez l’URL Supabase et la **clé publique** au moment du build. Une clé publique est conçue pour être distribuée au client, mais elle doit toujours être associée à des politiques RLS strictes ; elle ne remplace jamais une clé de service côté serveur.[1]
 
+```bash
+flutter pub get
+flutter run \
+  --dart-define=SUPABASE_URL=https://<project-ref>.supabase.co \
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=<sb_publishable_key>
+```
 
+N’ajoutez jamais de clé `service_role`, de clé OpenAI ni de fichier `key.properties` au dépôt. Les exclusons Git couvrent les fichiers de configuration sensibles et de signature.
 
-<!-- TABLE OF CONTENTS -->
-<details open="open">
-  <summary><h2 style="display: inline-block">Table of Contents</h2></summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgements">Acknowledgements</a></li>
-  </ol>
-</details>
+## Configuration du guide IA
 
+La fonction `tour-guide` est conçue pour rester authentifiée. L’application ouvre une session anonyme uniquement pour recevoir un JWT ; activez donc **Anonymous Sign-Ins** dans Supabase Auth avant d’utiliser le guide. Configurez ensuite les secrets de fonction suivants dans Supabase, et jamais dans Flutter ou GitHub :
 
+| Secret de fonction | Rôle |
+| --- | --- |
+| `OPENAI_API_KEY` | Clé privée du fournisseur IA utilisée uniquement dans l’Edge Function |
+| `OPENAI_MODEL` | Modèle à utiliser ; `gpt-4o-mini` est le repli prévu par le code |
 
-## About The Project
+La fonction contrôle la taille des requêtes, refuse certains motifs de données personnelles, vérifie le JWT, applique une limite de **12 requêtes par 10 minutes et par utilisateur**, et transmet au modèle uniquement le contexte des lieux dont le statut est `منشور`. Les réponses demandent explicitement la transparence lorsque l’information n’est pas disponible.
 
-![Travel-App](https://github.com/sahilkargutkar/palghar-tourism/blob/master/images/screenshot.png)
+> Le guide fournit une aide de découverte. Les horaires, tarifs, transports et conditions de visite doivent être confirmés auprès des établissements ou autorités locales.
 
-### Built With
+## Provenance des médias
 
-* [Flutter](https://flutter.dev/docs/get-started/codelab)
+Le dépôt ne contient plus aucun média photographique, vidéo ou audio issu de l’ancien modèle Palghar/Vasai ni aucune icône Flutter générique. L’interface exploite une dégradation visuelle explicite lorsqu’aucune image **authentifiée pour El Oued** n’est disponible. Les constats détaillés sont conservés dans [`docs/media_audit_notes.md`](docs/media_audit_notes.md).
 
+L’inventaire de Supabase Storage a révélé des objets aux noms génériques et sans preuve de provenance à l’échelle de l’objet. Afin d’éviter des fichiers facturés mais orphelins, leur suppression doit passer exclusivement par l’API Storage ou le tableau de bord autorisé, et non par une requête SQL de métadonnées.[3] Cette dernière suppression est volontairement différée tant qu’un accès Storage authentifié n’est pas disponible.
 
+## Sécurité Supabase
 
-## Getting Started
+Les migrations versionnées dans `supabase/migrations/` appliquent un modèle par défaut fermé. Elles suppriment les écritures anonymes héritées, accordent uniquement la lecture des contenus publics nécessaires, déplacent la vérification d’administration dans un schéma `private`, retirent l’exécution RPC des fonctions internes et ajoutent une table privée de limitation de débit. Les fonctions `SECURITY DEFINER` utilisent un `search_path` déterministe et l’API de données combine privilèges SQL minimaux et politiques RLS, conformément au modèle recommandé par Supabase.[1]
 
-To get a local copy up and running follow these simple steps.
+Il reste une action de sécurité de console à effectuer une seule fois : activez **Leaked Password Protection** dans Supabase Auth. Cette option vérifie les mots de passe compromis lors des flux de mot de passe.[2]
 
-### Prerequisites
+## Qualité et CI/CD
 
-This is an example of how to list things you need to use the software and how to install them.
-*
-  ```sh
-  flutter run
-  ```
+Le workflow `Android quality gate` s’exécute sur les pull requests, `main` et les déclenchements manuels. Il formate le code, lance l’analyse statique, exécute les tests et publie un APK de validation comme artefact du workflow.
 
-### Installation
+Le workflow `Publish Android release` s’exécute pour chaque tag `v*` et publie un APK signé dans une GitHub Release. Définissez ces secrets GitHub avant de créer le premier tag :
 
-1. Clone the repo
-   ```sh
-   git clone https://github.com/sahilkargutkar/palghar-tourism.git
-   ```
+| Secret GitHub | Usage |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | Keystore d’upload encodé en Base64 |
+| `ANDROID_KEY_ALIAS` | Alias de la clé de signature |
+| `ANDROID_KEY_PASSWORD` | Mot de passe de la clé |
+| `ANDROID_STORE_PASSWORD` | Mot de passe du keystore |
+| `SUPABASE_URL` | URL publique du projet Supabase |
+| `SUPABASE_PUBLISHABLE_KEY` | Clé publique Supabase injectée au build |
 
+```bash
+# Vérification locale complète
+flutter pub get
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test --coverage
+flutter build apk --debug
 
+# Publication après configuration des secrets GitHub
+git tag v1.1.0
+git push origin v1.1.0
+```
 
-<!-- USAGE EXAMPLES -->
-## Usage
+## Vérifications réalisées
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+| Contrôle | Résultat |
+| --- | --- |
+| Analyse Flutter | Sans problème |
+| Tests Flutter | Réussis |
+| APK debug local | Généré avec succès |
+| Migration RLS et privilèges | Appliquée au projet Supabase |
+| Edge Function `tour-guide` | Déployée avec vérification JWT active |
+| Analyse de sécurité Supabase | Alertes RLS et fonctions publiques résolues ; activation manuelle de la protection contre les mots de passe compromis restante |
+| Médias sources | Images Palghar/Vasai, captures, icônes Flutter et scaffolding iOS supprimés ; aucun média non vérifié n’est embarqué |
+| Supabase Storage | Inventorié et documenté ; suppression physique différée faute d’accès Storage authentifié, afin d’éviter des objets orphelins |
 
-_For more examples, please refer to the [Documentation](https://flutter.dev/docs)_
+## Références
 
-
-
-<!-- ROADMAP -->
-## Roadmap
-
-See the [open issues](https://github.com/sahilkargutkar/palghar-tourism/issues) for a list of proposed features (and known issues).
-
-
-
-<!-- CONTRIBUTING -->
-## Contributing
-
-Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-
-
-<!-- LICENSE -->
-## License
-
-Distributed under the MIT License. See `LICENSE` for more information.
-
-
-
-<!-- CONTACT -->
-## Contact
-
-Your Name - [Sahil Kargutkar](mailto:sahilkargutkar.sk@gmail.com) - email
-
-Project Link: [https://github.com/sahilkargutkar/palghar-tourism](https://github.com/sahilkargutkar/palghar-tourism)
-
-
-
-
-
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/sahilkargutkar/palghar-tourism.svg?style=for-the-badge
-[contributors-url]: https://github.com/sahilkargutkar/palghar-tourism/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/sahilkargutkar/palghar-tourism.svg?style=for-the-badge
-[forks-url]: https://github.com/sahilkargutkar/palghar-tourism/network/members
-[stars-shield]: https://img.shields.io/github/stars/sahilkargutkar/palghar-tourism.svg?style=for-the-badge
-[stars-url]: https://github.com/sahilkargutkar/palghar-tourism/stargazers
-[issues-shield]: https://img.shields.io/github/issues/sahilkargutkar/palghar-tourism.svg?style=for-the-badge
-[issues-url]: https://github.com/sahilkargutkar/palghar-tourism/issues
-[license-shield]: https://img.shields.io/github/license/sahilkargutkar/palghar-tourism.svg?style=for-the-badge
-[license-url]: https://github.com/sahilkargutkar/palghar-tourism/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/sahilkar99
+[1]: https://supabase.com/docs/guides/api/securing-your-api "Supabase — Securing your API"
+[2]: https://supabase.com/docs/guides/auth/password-security "Supabase — Password security"
+[3]: https://supabase.com/docs/guides/storage/management/delete-objects "Supabase — Delete Storage objects"

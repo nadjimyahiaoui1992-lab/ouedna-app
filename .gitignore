@@ -14,3 +14,21 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Android signing and local SDK configuration
+android/.gradle/
+android/local.properties
+android/key.properties
+android/app/upload-keystore.jks
+*.keystore
+*.jks
+
+# Runtime configuration and Supabase secrets
+assets/env.json
+supabase/.env
+supabase/.env.*
+
+# Build artifacts and reports
+*.apk
+*.aab
+coverage/
