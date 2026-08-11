@@ -15,4 +15,19 @@ subprojects {
 
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
+}subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                if (namespace == null) {
+                    namespace project.group
+                }
+                compileSdkVersion 34 // أو النسخة التي تستخدمها
+                defaultConfig {
+                    targetSdkVersion 34
+                }
+            }
+        }
+    }
 }
+
