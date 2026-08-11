@@ -9,11 +9,7 @@ rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
-subprojects {
-    project.evaluationDependsOn(':app')
-}
 
-// أضف هذا الكود هنا في نهاية الملف تماماً لإصلاح مشكلة geolocator_android
 subprojects {
     afterEvaluate { project ->
         if (project.hasProperty('android')) {
