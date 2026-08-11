@@ -38,3 +38,11 @@ jobs:
         with:
           name: app-debug
           path: build/app/outputs/flutter-apk/app-debug.apk
+
+- name: Create env.json from secrets
+  run: |
+    echo '{' > assets/env.json
+    echo '  "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",' >> assets/env.json
+    echo '  "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}"' >> assets/env.json
+    echo '}' >> assets/env.json
+
