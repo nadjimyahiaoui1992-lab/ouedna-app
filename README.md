@@ -41,6 +41,8 @@ Each place has a premium detail experience with a gallery Supabase, a native min
 | Map | Native OpenStreetMap tiles, search, dynamic categories, nearby places on demand, image markers, clustering, place cards, a recenter control, and optional current location. |
 | Navigation | In-app route panel with real provider geometry, distance, estimated duration, movement modes, voluntary GPS follow, off-route recalculation, and arrival feedback. |
 | Guide IA | Arabic conversational interface backed by the authenticated `tour-guide` Edge Function. |
+| Souf Compass | A local, offline-capable itinerary composer that ranks only real published places according to visitor-selected categories, available time and optional on-device location. It never fabricates a route or stop. |
+| Assistance urgente | A confirmation sheet opens the Android dialer for Algeria Civil Protection (`14` or `1021`) without uploading the visitor’s location or contact data. |
 | Accessibility | Arabic RTL layout, semantic labels on images, adequate controls, and material error/retry states. |
 
 ## Architecture
@@ -57,7 +59,8 @@ lib/
 │   ├── theme/                            # Souf 360 Material 3 palettes
 │   └── widgets/                          # Cross-screen offline notice
 └── features/
-    ├── home/                             # Dynamic home catalogue
+    ├── home/                             # Dynamic home catalogue and visitor actions
+    ├── compass/                          # Offline-capable personalised itinerary composer
     ├── favorites/                        # Device-local saved places
     ├── map/                              # Native map, search, proximity and clustered markers
     ├── routing/                           # Provider-neutral route contract, Supabase adapter and navigation UI
@@ -148,3 +151,4 @@ Before enabling password-based administrator accounts, enable **Leaked Password 
 [1]: https://supabase.com/docs/guides/api/securing-your-api "Supabase — Securing your API"
 [2]: https://supabase.com/docs/guides/auth/password-security "Supabase — Password security"
 [3]: https://supabase.com/docs/guides/realtime/postgres-changes "Supabase — Postgres Changes"
+[4]: https://www.poste.dz/philately/s/1629 "Algérie Poste — Numéros de la Protection Civile"

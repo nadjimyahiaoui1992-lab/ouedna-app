@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/storage/favorites_controller.dart';
+import '../../../core/widgets/emergency_assistance_sheet.dart';
 import '../../../core/widgets/offline_catalogue_notice.dart';
 import '../../places/domain/entities/place.dart';
 import '../../places/domain/repositories/place_repository.dart';
 import '../../places/presentation/place_details_page.dart';
 import '../../places/presentation/widgets/place_card.dart';
+import '../../compass/presentation/compass_page.dart';
 import '../../routing/domain/routing_service.dart';
 import '../../tour_guide/domain/repositories/tour_guide_repository.dart';
 import '../../tour_guide/presentation/tour_guide_page.dart';
@@ -77,6 +79,19 @@ class _HomePageState extends State<HomePage> {
                 TourGuidePage(repository: widget.tourGuideRepository)),
       );
 
+  void _openCompass() => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => CompassPage(
+            repository: widget.repository,
+            favorites: widget.favorites,
+            routingService: widget.routingService,
+            onMap: widget.onMap,
+          ),
+        ),
+      );
+
+  void _openEmergency() => showEmergencyAssistanceSheet(context);
+
   void _openPlace(Place place) => Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => PlaceDetailsPage(
@@ -132,9 +147,20 @@ class _HomePageState extends State<HomePage> {
                         icon: const Icon(Icons.auto_awesome_outlined),
                       ),
                       IconButton(
+                        tooltip: 'بوصلة سوف',
+                        onPressed: _openCompass,
+                        icon: const Icon(Icons.explore_outlined),
+                      ),
+                      IconButton(
                         tooltip: 'الخريطة',
                         onPressed: widget.onMap,
                         icon: const Icon(Icons.map_outlined),
+                      ),
+                      IconButton(
+                        tooltip: 'مساعدة عاجلة',
+                        onPressed: _openEmergency,
+                        color: Theme.of(context).colorScheme.error,
+                        icon: const Icon(Icons.sos_outlined),
                       ),
                     ],
                   ),
