@@ -1,61 +1,96 @@
 import 'package:flutter/material.dart';
 
 abstract final class AppTheme {
-  static const _sand = Color(0xFFFFE8B5);
-  static const _deepSand = Color(0xFF8C4A12);
-  static const _oasis = Color(0xFF245C4A);
+  static const deepGreen = Color(0xFF193F38);
+  static const darkGreen = Color(0xFF102D28);
+  static const gold = Color(0xFFD9A441);
+  static const softGold = Color(0xFFE5B65A);
+  static const ivory = Color(0xFFFBF7EF);
 
-  static ThemeData light() {
+  static ThemeData light() => _theme(
+        brightness: Brightness.light,
+        surface: ivory,
+        onSurface: const Color(0xFF17332E),
+        surfaceContainer: const Color(0xFFF2EBDD),
+      );
+
+  static ThemeData dark() => _theme(
+        brightness: Brightness.dark,
+        surface: const Color(0xFF0D211D),
+        onSurface: const Color(0xFFF7F1E7),
+        surfaceContainer: const Color(0xFF17352E),
+      );
+
+  static ThemeData _theme({
+    required Brightness brightness,
+    required Color surface,
+    required Color onSurface,
+    required Color surfaceContainer,
+  }) {
     final scheme = ColorScheme.fromSeed(
-      seedColor: _oasis,
-      brightness: Brightness.light,
-      primary: _oasis,
-      secondary: _deepSand,
-      surface: const Color(0xFFFFFBF5),
+      seedColor: deepGreen,
+      primary:
+          brightness == Brightness.light ? deepGreen : const Color(0xFF9EDAC6),
+      secondary: gold,
+      surface: surface,
+      onSurface: onSurface,
+      brightness: brightness,
     );
-
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: const Color(0xFFFFFBF5),
+      scaffoldBackgroundColor: surface,
       appBarTheme: AppBarTheme(
-        backgroundColor: Colors.transparent,
-        foregroundColor: scheme.onSurface,
+        backgroundColor: surface,
+        foregroundColor: onSurface,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
-        titleTextStyle: TextStyle(
-          color: scheme.onSurface,
-          fontSize: 22,
-          fontWeight: FontWeight.w700,
-        ),
       ),
       cardTheme: CardTheme(
-        color: Colors.white,
+        color: brightness == Brightness.light ? Colors.white : surfaceContainer,
         elevation: 0,
-        margin: EdgeInsets.zero,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      ),
-      chipTheme: ChipThemeData(
-        side: BorderSide(color: scheme.outlineVariant),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        clipBehavior: Clip.antiAlias,
+        margin: EdgeInsets.zero,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: _sand.withOpacity(.35),
+        fillColor: surfaceContainer,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide.none,
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: gold, width: 1.5),
+        ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        height: 76,
-        indicatorColor: scheme.primaryContainer,
+        height: 78,
+        backgroundColor:
+            brightness == Brightness.light ? Colors.white : darkGreen,
+        indicatorColor: brightness == Brightness.light
+            ? const Color(0xFFD7F0E6)
+            : const Color(0xFF285A4D),
         labelTextStyle: WidgetStatePropertyAll(
-          TextStyle(
-              color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600),
+          TextStyle(fontWeight: FontWeight.w700, color: onSurface),
         ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: surfaceContainer,
+        selectedColor: deepGreen,
+        secondarySelectedColor: deepGreen,
+        labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
+        side: BorderSide.none,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }

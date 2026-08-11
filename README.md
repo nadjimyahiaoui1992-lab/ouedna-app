@@ -1,124 +1,142 @@
-# Souf Tour
+# Souf 360 — سوف 360
 
-**Souf Tour** est une application Flutter Android de découverte culturelle et touristique d’El Oued. Elle associe une exploration de lieux publiés à un guide conversationnel exécuté côté serveur afin que les clés du fournisseur IA ne soient jamais incluses dans l’APK.
+**Souf 360** is a premium Arabic-first Android tourism companion for **El Oued (Wadi Souf), Algeria**. The application is designed for visitors and the public; the companion platform, [Souf360 Admin](https://souf360.vercel.app), remains the sole place where administrators create, edit, publish, and geolocate places.
 
-| Domaine | Choix de production |
+> **Visitor promise:** *اكتشف وادي سوف من كل زاوية* — discover Wadi Souf from every angle.
+
+| Area | Production choice |
 | --- | --- |
-| Client mobile | Flutter, Dart 3 et Material Design 3 |
-| Données | Supabase avec RLS, privilèges explicites et contenus publiés seulement |
-| Guide IA | Supabase Edge Function authentifiée, limitation par utilisateur et contexte des lieux publiés |
-| Android | Java 17, AGP 8.5.2, Gradle 8.7, SDK cible 35 |
-| Livraison | Analyse, tests, APK de validation et workflow de release GitHub |
+| Mobile client | Flutter, Dart 3, Material Design 3, Arabic RTL as the primary locale |
+| Android identity | Package `com.souf360.app`, target SDK 35, Java 17, Gradle 8.7 |
+| Design system | Deep green `#193F38`, dark green `#102D28`, gold `#D9A441`, soft gold `#E5B65A`, ivory `#FBF7EF` |
+| Catalogue | Existing Souf360 Supabase project only; no parallel database or mock catalogue |
+| Synchronisation | Supabase queries, public read policies, and Realtime notifications for `places` |
+| Mapping | Native `flutter_map` with OpenStreetMap; no WebView and no embedded admin platform |
+| Assistant | Authenticated `tour-guide` Supabase Edge Function; private AI credentials never enter the APK |
+
+## How Souf360 Admin and Souf 360 work together
+
+Souf360 Admin is the content-management surface. Souf 360 is deliberately a read-only visitor client. The Android app queries only places whose status is `منشور`, so an administrator can prepare a place privately before making it visible to visitors. A change notification on the shared `places` table causes the catalogue screens to refresh automatically; publishing a new place in the administration platform therefore makes it available in the app without an app update.
+
+| Change made in Souf360 Admin | Result in Souf 360 Android |
+| --- | --- |
+| A place is added or corrected | The shared record is saved in the existing `public.places` table. |
+| The status changes to `منشور` | The place becomes eligible for the public catalogue under Row Level Security. |
+| Coordinates or category are changed | The place is refreshed in lists, category filters, and the native map. |
+| Gallery records are changed | The place detail page reloads its Supabase gallery on the next open. |
+
+The app does not create, alter, or delete tourism content. It uses the public Supabase key only; a `service_role` key, Edge Function secrets, and AI-provider keys must never be bundled in an APK.
+
+## Visitor experience
+
+The four primary destinations are **الرئيسية**, **المعالم**, **الخريطة**, and **المفضلة**. The home experience contains dynamic categories, featured places, latest additions, a search shortcut, and an entry point to the intelligent tour guide. The places experience supports Arabic search across a place’s name, description, category, address, district, and municipality; it also supports category filters, pull-to-refresh, lazy pagination, skeleton states, empty states, and retry states.
+
+Each place has a premium detail experience with a hero image, metadata, a Supabase gallery, a native mini-map, contact links, sharing, a local favourite button, and external directions. Where coordinates are present, directions use an Android `geo:` URI; otherwise the published map link is used. GPS permission is requested only when a visitor taps the **my location** control on the map.
+
+| Capability | Behaviour |
+| --- | --- |
+| Offline mode | Published places are cached in `SharedPreferences`. If Souf360 is unavailable, cached results remain usable and the app explicitly shows that the data may not be current. |
+| Favourites | Stored locally on the device; no registration, password, or backend write is needed. |
+| Dark mode | A real dark Material 3 palette is available from the app shell. |
+| Map | Native OpenStreetMap tiles, clustered place markers, category filtering, a recenter control, and optional current location. |
+| Guide IA | Arabic conversational interface backed by the authenticated `tour-guide` Edge Function. |
+| Accessibility | Arabic RTL layout, semantic labels on images, adequate controls, and material error/retry states. |
 
 ## Architecture
 
-Le code suit une séparation pragmatique inspirée de **Clean Architecture**. Les entités et contrats de dépôt sont dans `domain`, les adaptations Supabase dans `data`, et les écrans Flutter dans `presentation`. Cette frontière permet de tester l’application sans réseau et d’éviter que les widgets dépendent directement du SDK de données.
+The repository uses a pragmatic **Clean Architecture** separation. Domain entities and repository contracts do not depend on Supabase or widgets. Data adapters are responsible for Supabase, local caching, and JSON mapping. Presentation layers compose Flutter pages and reusable widgets.
 
 ```text
 lib/
-├── app/                         # Composition et navigation de l’application
-├── core/                        # Configuration, erreurs et thème partagé
+├── app/                                  # Root MaterialApp, RTL shell, theme mode, 4 destinations
+├── core/
+│   ├── config/                           # Souf360 public client configuration
+│   ├── location/                         # Permission-on-demand GPS access
+│   ├── storage/                          # Local favourites controller
+│   ├── theme/                            # Souf 360 Material 3 palettes
+│   └── widgets/                          # Cross-screen offline notice
 └── features/
-    ├── places/                  # Consultation des lieux publiés
-    ├── explore/                 # Parcours d’exploration Material 3
-    ├── tour_guide/              # Conversation avec l’Edge Function
-    └── profile/                 # Transparence et confidentialité
+    ├── home/                             # Dynamic home catalogue
+    ├── favorites/                        # Device-local saved places
+    ├── map/                              # Native clustered OpenStreetMap experience
+    ├── places/
+    │   ├── domain/                       # Place, gallery, pagination, repository contracts
+    │   ├── data/                         # Supabase repository and offline-first cache
+    │   └── presentation/                 # Lists, cards, filters and place details
+    └── tour_guide/                       # Edge Function client and Arabic chat UI
 ```
 
-## Démarrage local
+## Android branding
 
-La consultation des écrans peut fonctionner sans backend, en mode démonstration. Pour activer les données et le guide, transmettez l’URL Supabase et la **clé publique** au moment du build. Une clé publique est conçue pour être distribuée au client, mais elle doit toujours être associée à des politiques RLS strictes ; elle ne remplace jamais une clé de service côté serveur.[1]
+The project ships with a Souf 360 icon and launch experience built around the visual language of El Oued: golden dunes, a palm oasis, and a Saharan dome. Android resources under `android/app/src/main/res/` replace the previous generic launcher asset. The launch scene uses the ivory, green, and gold brand palette before Flutter renders its first frame.
+
+## Local development
+
+Flutter 3.24.5, Android SDK 35, and Java 17 are the validated baseline. The project is preconfigured for the existing Souf360 project. Developers can override the public endpoint and public key at build time when working with an authorised environment.
 
 ```bash
 flutter pub get
 flutter run \
   --dart-define=SUPABASE_URL=https://<project-ref>.supabase.co \
-  --dart-define=SUPABASE_PUBLISHABLE_KEY=<sb_publishable_key>
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=<public-anon-or-publishable-key>
 ```
 
-N’ajoutez jamais de clé `service_role`, de clé OpenAI ni de fichier `key.properties` au dépôt. Les exclusons Git couvrent les fichiers de configuration sensibles et de signature.
-
-## Configuration du guide IA
-
-La fonction `tour-guide` est conçue pour rester authentifiée. L’application ouvre une session anonyme uniquement pour recevoir un JWT ; activez donc **Anonymous Sign-Ins** dans Supabase Auth avant d’utiliser le guide. Configurez ensuite les secrets de fonction suivants dans Supabase, et jamais dans Flutter ou GitHub :
-
-| Secret de fonction | Rôle |
-| --- | --- |
-| `OPENAI_API_KEY` | Clé privée du fournisseur IA utilisée uniquement dans l’Edge Function |
-| `OPENAI_MODEL` | Modèle à utiliser ; `gpt-4o-mini` est le repli prévu par le code |
-
-La fonction contrôle la taille des requêtes, refuse certains motifs de données personnelles, vérifie le JWT, applique une limite de **12 requêtes par 10 minutes et par utilisateur**, et transmet au modèle uniquement le contexte des lieux dont le statut est `منشور`. Les réponses demandent explicitement la transparence lorsque l’information n’est pas disponible.
-
-> Le guide fournit une aide de découverte. Les horaires, tarifs, transports et conditions de visite doivent être confirmés auprès des établissements ou autorités locales.
-
-## Intégration Souf360
-
-**Souf360** est la surface de gestion : les administrateurs y ajoutent, corrigent, publient et géolocalisent les المعالم. **Souf Tour** est l’application Android grand public : elle ne contient aucune interface d’administration et consomme uniquement le catalogue public soumis aux politiques RLS.
-
-| Événement dans Souf360 | Effet dans Souf Tour |
-| --- | --- |
-| Un administrateur ajoute ou modifie un lieu | Le changement est enregistré dans `public.places`. |
-| Le statut du lieu devient `منشور` | Le lieu devient lisible par les visiteurs conformément à la politique RLS. |
-| La table `places` émet un changement | L’application reçoit le signal Realtime puis recharge la liste publiée automatiquement. |
-
-L’application est configurée par défaut pour lire le même projet public que [Souf360](https://souf360.vercel.app). Les paramètres de développement peuvent encore être remplacés par `SUPABASE_URL` et `SUPABASE_PUBLISHABLE_KEY`, mais aucune clé de service n’est embarquée dans l’APK.
-
-## Provenance des médias
-
-Le dépôt ne contient plus aucun média photographique, vidéo ou audio issu de l’ancien modèle Palghar/Vasai ni aucune icône Flutter générique. L’interface exploite une dégradation visuelle explicite lorsqu’aucune image **authentifiée pour El Oued** n’est disponible. Les constats détaillés sont conservés dans [`docs/media_audit_notes.md`](docs/media_audit_notes.md).
-
-L’inventaire de Supabase Storage a révélé des objets aux noms génériques et sans preuve de provenance à l’échelle de l’objet. Afin d’éviter des fichiers facturés mais orphelins, leur suppression doit passer exclusivement par l’API Storage ou le tableau de bord autorisé, et non par une requête SQL de métadonnées.[3] Cette dernière suppression est volontairement différée tant qu’un accès Storage authentifié n’est pas disponible.
-
-## Sécurité Supabase
-
-Les migrations versionnées dans `supabase/migrations/` appliquent un modèle par défaut fermé. Elles suppriment les écritures anonymes héritées, accordent uniquement la lecture des contenus publics nécessaires, déplacent la vérification d’administration dans un schéma `private`, retirent l’exécution RPC des fonctions internes et ajoutent une table privée de limitation de débit. Les fonctions `SECURITY DEFINER` utilisent un `search_path` déterministe et l’API de données combine privilèges SQL minimaux et politiques RLS, conformément au modèle recommandé par Supabase.[1]
-
-Il reste une action de sécurité de console à effectuer une seule fois : activez **Leaked Password Protection** dans Supabase Auth. Cette option vérifie les mots de passe compromis lors des flux de mot de passe.[2]
-
-## Qualité et CI/CD
-
-Le workflow `Android quality gate` s’exécute sur les pull requests, `main` et les déclenchements manuels. Il formate le code, lance l’analyse statique, exécute les tests et publie un APK de validation comme artefact du workflow.
-
-Le workflow `Publish Android release` s’exécute pour chaque tag `v*` et publie un APK signé dans une GitHub Release. Définissez ces secrets GitHub avant de créer le premier tag :
-
-| Secret GitHub | Usage |
-| --- | --- |
-| `ANDROID_KEYSTORE_BASE64` | Keystore d’upload encodé en Base64 |
-| `ANDROID_KEY_ALIAS` | Alias de la clé de signature |
-| `ANDROID_KEY_PASSWORD` | Mot de passe de la clé |
-| `ANDROID_STORE_PASSWORD` | Mot de passe du keystore |
-| `SUPABASE_URL` | URL publique du projet Supabase |
-| `SUPABASE_PUBLISHABLE_KEY` | Clé publique Supabase injectée au build |
+Run the complete local quality gate before opening a pull request:
 
 ```bash
-# Vérification locale complète
-flutter pub get
 dart format --set-exit-if-changed lib test
-flutter analyze
-flutter test --coverage
+flutter analyze --fatal-infos
+flutter test
 flutter build apk --debug
-
-# Publication après configuration des secrets GitHub
-git tag v1.1.0
-git push origin v1.1.0
 ```
 
-## Vérifications réalisées
+The Android release build is generated with:
 
-| Contrôle | Résultat |
+```bash
+flutter build apk --release
+cp build/app/outputs/flutter-apk/app-release.apk releases/Souf360.apk
+```
+
+A release delivered to Google Play must be signed with the product’s permanent upload keystore. For a local production signing build, create `android/key.properties` outside version control:
+
+```properties
+storePassword=<store password>
+keyPassword=<key password>
+keyAlias=<key alias>
+storeFile=<path to upload keystore>
+```
+
+The repository falls back to the Android debug signer only when this file is absent, which is suitable for installable internal validation but **not** for a Play Store upload.
+
+## CI/CD and release signing
+
+The **Android quality gate** runs formatting, static analysis, tests, and a debug APK build. The **Publish Android release** workflow runs for tags matching `v*`; it restores the permanent upload key, injects public Supabase configuration at build time, produces a signed release APK, and publishes it in GitHub Releases.
+
+| GitHub Actions secret | Purpose |
 | --- | --- |
-| Analyse Flutter | Sans problème |
-| Tests Flutter | Réussis |
-| APK debug local | Généré avec succès |
-| Migration RLS et privilèges | Appliquée au projet Supabase |
-| Edge Function `tour-guide` | Déployée avec vérification JWT active |
-| Analyse de sécurité Supabase | Alertes RLS et fonctions publiques résolues ; activation manuelle de la protection contre les mots de passe compromis restante |
-| Médias sources | Images Palghar/Vasai, captures, icônes Flutter et scaffolding iOS supprimés ; aucun média non vérifié n’est embarqué |
-| Supabase Storage | Inventorié et documenté ; suppression physique différée faute d’accès Storage authentifié, afin d’éviter des objets orphelins |
+| `ANDROID_KEYSTORE_BASE64` | Base64-encoded permanent Android upload keystore |
+| `ANDROID_KEY_ALIAS` | Alias of the upload key |
+| `ANDROID_KEY_PASSWORD` | Password of the selected key |
+| `ANDROID_STORE_PASSWORD` | Password of the keystore |
+| `SUPABASE_URL` | Public URL of the existing Souf360 Supabase project |
+| `SUPABASE_PUBLISHABLE_KEY` | Public Supabase client key injected during release build |
 
-## Références
+```bash
+git tag v1.2.0
+# Review the tag before publishing it.
+git push origin v1.2.0
+```
+
+## Security model
+
+Supabase migration files in `supabase/migrations/` enforce a closed-by-default posture. Public users receive only the read access necessary for published tourism content; public writes are removed. Administrative checks and rate-limit state remain private. The `tour-guide` function verifies a JWT, rate-limits requests, and keeps private AI-provider configuration server-side.
+
+> A public Supabase client key identifies the client and is expected to be distributed in a mobile application. It remains safe only when combined with strict Row Level Security; it is never a replacement for a service-role secret.[1]
+
+Before enabling password-based administrator accounts, enable **Leaked Password Protection** in Supabase Auth. This remains a console-side security setting rather than a mobile-app responsibility.[2]
+
+## References
 
 [1]: https://supabase.com/docs/guides/api/securing-your-api "Supabase — Securing your API"
 [2]: https://supabase.com/docs/guides/auth/password-security "Supabase — Password security"
-[3]: https://supabase.com/docs/guides/storage/management/delete-objects "Supabase — Delete Storage objects"
-[4]: https://supabase.com/docs/guides/realtime/postgres-changes "Supabase — Postgres Changes"
+[3]: https://supabase.com/docs/guides/realtime/postgres-changes "Supabase — Postgres Changes"

@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import '../core/storage/favorites_controller.dart';
 import '../core/theme/app_theme.dart';
-import '../features/explore/presentation/explore_page.dart';
-import '../features/profile/presentation/profile_page.dart';
+import '../features/favorites/presentation/favorites_page.dart';
+import '../features/home/presentation/home_page.dart';
+import '../features/map/presentation/souf_map_page.dart';
 import '../features/places/domain/repositories/place_repository.dart';
+import '../features/places/presentation/places_page.dart';
 import '../features/tour_guide/domain/repositories/tour_guide_repository.dart';
-import '../features/tour_guide/presentation/tour_guide_page.dart';
 
 class SoufTourApp extends StatefulWidget {
   const SoufTourApp({
     super.key,
     required this.placeRepository,
     required this.tourGuideRepository,
+    required this.favoritesController,
     required this.isBackendConfigured,
   });
 
   final PlaceRepository? placeRepository;
   final TourGuideRepository? tourGuideRepository;
+  final FavoritesController favoritesController;
   final bool isBackendConfigured;
 
   @override
@@ -26,46 +30,89 @@ class SoufTourApp extends StatefulWidget {
 
 class _SoufTourAppState extends State<SoufTourApp> {
   var _selectedIndex = 0;
+  var _themeMode = ThemeMode.system;
+
+  void _select(int index) => setState(() => _selectedIndex = index);
+  void _toggleTheme() => setState(() {
+        _themeMode =
+            _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+      });
 
   @override
   Widget build(BuildContext context) {
     final pages = [
-      ExplorePage(
-        placeRepository: widget.placeRepository,
-        isBackendConfigured: widget.isBackendConfigured,
+      HomePage(
+        repository: widget.placeRepository,
+        favorites: widget.favoritesController,
+        tourGuideRepository: widget.tourGuideRepository,
+        onExplore: () => _select(1),
+        onMap: () => _select(2),
       ),
-      TourGuidePage(repository: widget.tourGuideRepository),
-      const ProfilePage(),
+      PlacesPage(
+          repository: widget.placeRepository,
+          favorites: widget.favoritesController),
+      SoufMapPage(
+          repository: widget.placeRepository,
+          favorites: widget.favoritesController),
+      FavoritesPage(
+          repository: widget.placeRepository,
+          favorites: widget.favoritesController),
     ];
 
     return MaterialApp(
-      title: 'سوف 360',
+      title: 'Souf 360',
       debugShowCheckedModeBanner: false,
       locale: const Locale('ar'),
       supportedLocales: const [Locale('ar')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: _themeMode,
+      builder: (context, child) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: Scaffold(
-        body: IndexedStack(index: _selectedIndex, children: pages),
+        body: Stack(
+          children: [
+            IndexedStack(index: _selectedIndex, children: pages),
+            if (_selectedIndex != 2)
+              Positioned(
+                top: MediaQuery.paddingOf(context).top + 6,
+                left: 12,
+                child: IconButton.filledTonal(
+                  tooltip: 'تبديل الوضع الليلي',
+                  onPressed: _toggleTheme,
+                  icon: Icon(_themeMode == ThemeMode.dark
+                      ? Icons.light_mode_outlined
+                      : Icons.dark_mode_outlined),
+                ),
+              ),
+          ],
+        ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _selectedIndex,
-          onDestinationSelected: (index) =>
-              setState(() => _selectedIndex = index),
+          onDestinationSelected: _select,
           destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'الرئيسية',
+            ),
             NavigationDestination(
               icon: Icon(Icons.explore_outlined),
               selectedIcon: Icon(Icons.explore),
-              label: 'استكشف',
+              label: 'المعالم',
             ),
             NavigationDestination(
-              icon: Icon(Icons.auto_awesome_outlined),
-              selectedIcon: Icon(Icons.auto_awesome),
-              label: 'دليل سوف',
+              icon: Icon(Icons.map_outlined),
+              selectedIcon: Icon(Icons.map),
+              label: 'الخريطة',
             ),
             NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'المزيد',
+              icon: Icon(Icons.favorite_border),
+              selectedIcon: Icon(Icons.favorite),
+              label: 'المفضلة',
             ),
           ],
         ),

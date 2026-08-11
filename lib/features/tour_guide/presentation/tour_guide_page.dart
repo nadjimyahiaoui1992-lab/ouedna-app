@@ -17,7 +17,7 @@ class _TourGuidePageState extends State<TourGuidePage> {
   final _messages = <_ChatMessage>[
     const _ChatMessage(
       text:
-          'Bonjour, je suis votre guide Souf Tour. Je peux vous aider à préparer une découverte respectueuse d’El Oued : idées de parcours, culture locale et conseils pratiques.',
+          'مرحباً، أنا دليلك الذكي في سوف 360. أساعدك في إعداد زيارة مميزة لوادي سوف عبر اقتراح مسارات، معلومات ثقافية، ونصائح عملية.',
       isUser: false,
     ),
   ];
@@ -51,7 +51,7 @@ class _TourGuidePageState extends State<TourGuidePage> {
         () => _messages.add(
           const _ChatMessage(
             text:
-                'Je ne peux pas répondre pour le moment. Vérifiez votre connexion puis réessayez.',
+                'يتعذر عليّ الإجابة الآن. تحقق من اتصال الإنترنت ثم أعد المحاولة.',
             isUser: false,
             isError: true,
           ),
@@ -74,7 +74,7 @@ class _TourGuidePageState extends State<TourGuidePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Guide intelligent',
+                  'الدليل الذكي',
                   style: Theme.of(context)
                       .textTheme
                       .headlineMedium
@@ -82,7 +82,7 @@ class _TourGuidePageState extends State<TourGuidePage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Une aide conversationnelle fondée sur les informations publiées. Vérifiez toujours les conditions de visite auprès des sources locales.',
+                  'مساعد محادثة يعتمد على المعلومات المنشورة. تحقّق دائماً من أوقات وشروط الزيارة لدى المصادر المحلية.',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 if (!isAvailable) ...[
@@ -118,14 +118,13 @@ class _TourGuidePageState extends State<TourGuidePage> {
                       textCapitalization: TextCapitalization.sentences,
                       onSubmitted: (_) => _send(),
                       decoration: const InputDecoration(
-                        hintText:
-                            'Ex. Que me conseillez-vous pour une demi-journée ?',
+                        hintText: 'مثال: ماذا تقترح لزيارة نصف يوم؟',
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton.filled(
-                    tooltip: 'Envoyer la question',
+                    tooltip: 'إرسال السؤال',
                     onPressed: isAvailable && !_isSending ? _send : null,
                     icon: const Icon(Icons.send_rounded),
                   ),
@@ -225,7 +224,7 @@ class _GuideUnavailableNotice extends StatelessWidget {
         child: const Padding(
           padding: EdgeInsets.all(14),
           child: Text(
-            'Le guide sera disponible une fois Supabase configuré avec une clé publique et la fonction tour-guide déployée.',
+            'الدليل الذكي غير متاح مؤقتاً. تحقق من إعدادات الاتصال وحاول مرة أخرى لاحقاً.',
           ),
         ),
       );
@@ -247,7 +246,7 @@ class _TypingIndicator extends StatelessWidget {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2)),
               SizedBox(width: 10),
-              Text('Le guide prépare sa réponse…'),
+              Text('يجري الدليل إعداد الإجابة…'),
             ],
           ),
         ),

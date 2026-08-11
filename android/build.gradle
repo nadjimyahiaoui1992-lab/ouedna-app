@@ -8,6 +8,9 @@ allprojects {
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
+    // Flutter plugins such as geolocator read the Flutter SDK properties while
+    // being configured; evaluate :app first so that extension is available.
+    project.evaluationDependsOn(':app')
 }
 
 tasks.register("clean", Delete) {
