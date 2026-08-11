@@ -11,7 +11,7 @@
 | Design system | Deep green `#193F38`, dark green `#102D28`, gold `#D9A441`, soft gold `#E5B65A`, ivory `#FBF7EF` |
 | Catalogue | Existing Souf360 Supabase project only; no parallel database or mock catalogue |
 | Synchronisation | Supabase queries, public read policies, and Realtime notifications for `places` |
-| Mapping | Native `flutter_map` with OpenStreetMap; no WebView and no embedded admin platform |
+| Cartographie et navigation | `flutter_map` et OpenStreetMap natifs ; itinéraire interne via le relais Supabase `routing`, sans WebView, Google Maps ni clé embarquée |
 | Assistant | Authenticated `tour-guide` Supabase Edge Function; private AI credentials never enter the APK |
 
 ## How Souf360 Admin and Souf 360 work together
@@ -31,14 +31,15 @@ The app does not create, alter, or delete tourism content. It uses the public Su
 
 The four primary destinations are **الرئيسية**, **المعالم**, **الخريطة**, and **المفضلة**. The home experience contains dynamic categories, featured places, latest additions, a search shortcut, and an entry point to the intelligent tour guide. The places experience supports Arabic search across a place’s name, description, category, address, district, and municipality; it also supports category filters, pull-to-refresh, lazy pagination, skeleton states, empty states, and retry states.
 
-Each place has a premium detail experience with a hero image, metadata, a Supabase gallery, a native mini-map, contact links, sharing, a local favourite button, and external directions. Where coordinates are present, directions use an Android `geo:` URI; otherwise the published map link is used. GPS permission is requested only when a visitor taps the **my location** control on the map.
+Each place has a premium detail experience with a gallery Supabase, a native mini-map, contact links, sharing, a local favourite button, and an in-app **الوصول إلى المكان** action. When published coordinates are present, the visitor enters Souf 360’s native navigation screen: the app asks for GPS permission only at that point, displays the real road geometry returned by the protected routing service, and can follow the visitor’s location after they explicitly start navigation. A place without published coordinates transparently reports that navigation is unavailable; no external map application, invented route, or fallback straight line is used.
 
 | Capability | Behaviour |
 | --- | --- |
 | Offline mode | Published places are cached in `SharedPreferences`. If Souf360 is unavailable, cached results remain usable and the app explicitly shows that the data may not be current. |
 | Favourites | Stored locally on the device; no registration, password, or backend write is needed. |
 | Dark mode | A real dark Material 3 palette is available from the app shell. |
-| Map | Native OpenStreetMap tiles, clustered place markers, category filtering, a recenter control, and optional current location. |
+| Map | Native OpenStreetMap tiles, search, dynamic categories, nearby places on demand, image markers, clustering, place cards, a recenter control, and optional current location. |
+| Navigation | In-app route panel with real provider geometry, distance, estimated duration, movement modes, voluntary GPS follow, off-route recalculation, and arrival feedback. |
 | Guide IA | Arabic conversational interface backed by the authenticated `tour-guide` Edge Function. |
 | Accessibility | Arabic RTL layout, semantic labels on images, adequate controls, and material error/retry states. |
 
@@ -58,7 +59,8 @@ lib/
 └── features/
     ├── home/                             # Dynamic home catalogue
     ├── favorites/                        # Device-local saved places
-    ├── map/                              # Native clustered OpenStreetMap experience
+    ├── map/                              # Native map, search, proximity and clustered markers
+    ├── routing/                           # Provider-neutral route contract, Supabase adapter and navigation UI
     ├── places/
     │   ├── domain/                       # Place, gallery, pagination, repository contracts
     │   ├── data/                         # Supabase repository and offline-first cache
@@ -108,6 +110,12 @@ storeFile=<path to upload keystore>
 
 The repository falls back to the Android debug signer only when this file is absent, which is suitable for installable internal validation but **not** for a Play Store upload.
 
+## Activating protected routing
+
+The committed `supabase/functions/routing/index.ts` function is deployed with JWT verification. It accepts only a published place identifier, a transient GPS origin, a supported travel mode, and an alternatives flag. It obtains the destination coordinates from the existing Souf360 `places` table, keeps the provider key server-side, and does not write visitor locations to the database.
+
+Set `GRAPHHOPPER_API_KEY` only as a Supabase Edge Function secret. Until this secret is configured, the function returns `routing_not_configured` and the Android screen shows a clear unavailable state instead of creating an estimated or straight-line route. This is intentional and prevents an API key from entering the APK.
+
 ## CI/CD and release signing
 
 The **Android quality gate** runs formatting, static analysis, tests, and a debug APK build. The **Publish Android release** workflow runs for tags matching `v*`; it restores the permanent upload key, injects public Supabase configuration at build time, produces a signed release APK, and publishes it in GitHub Releases.
@@ -129,7 +137,7 @@ git push origin v1.2.0
 
 ## Security model
 
-Supabase migration files in `supabase/migrations/` enforce a closed-by-default posture. Public users receive only the read access necessary for published tourism content; public writes are removed. Administrative checks and rate-limit state remain private. The `tour-guide` function verifies a JWT, rate-limits requests, and keeps private AI-provider configuration server-side.
+Supabase migration files in `supabase/migrations/` enforce a closed-by-default posture. Public users receive only the read access necessary for published tourism content; public writes are removed. Administrative checks and rate-limit state remain private. The `tour-guide` and `routing` functions verify a JWT; the routing function validates inputs, retrieves only published destination coordinates server-side, rate-limits access using the existing private control, and keeps the GraphHopper key outside the APK.
 
 > A public Supabase client key identifies the client and is expected to be distributed in a mobile application. It remains safe only when combined with strict Row Level Security; it is never a replacement for a service-role secret.[1]
 

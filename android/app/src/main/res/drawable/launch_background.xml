@@ -1,17 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="#FBF7EF" />
+            <gradient
+                android:angle="315"
+                android:startColor="#FBF7EF"
+                android:endColor="#F4EBDD"
+                android:type="linear" />
         </shape>
     </item>
-    <item>
-        <bitmap
-            android:gravity="fill"
-            android:src="@drawable/souf_splash" />
-    </item>
-    <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@drawable/souf360_app_icon" />
+    <item android:gravity="center">
+        <bitmap android:src="@drawable/souf360_app_icon" />
     </item>
 </layer-list>

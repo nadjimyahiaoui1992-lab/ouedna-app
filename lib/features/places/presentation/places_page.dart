@@ -7,6 +7,7 @@ import '../../../core/widgets/offline_catalogue_notice.dart';
 import '../domain/entities/place.dart';
 import '../domain/entities/place_page.dart';
 import '../domain/repositories/place_repository.dart';
+import '../../routing/domain/routing_service.dart';
 import 'place_details_page.dart';
 import 'widgets/place_card.dart';
 
@@ -15,10 +16,12 @@ class PlacesPage extends StatefulWidget {
     super.key,
     required this.repository,
     required this.favorites,
+    this.routingService,
   });
 
   final PlaceRepository? repository;
   final FavoritesController favorites;
+  final RoutingService? routingService;
 
   @override
   State<PlacesPage> createState() => _PlacesPageState();
@@ -133,6 +136,7 @@ class _PlacesPageState extends State<PlacesPage> {
             place: place,
             repository: widget.repository,
             favorites: widget.favorites,
+            routingService: widget.routingService,
           ),
         ),
       );

@@ -7,16 +7,19 @@ import '../../places/domain/entities/place.dart';
 import '../../places/domain/repositories/place_repository.dart';
 import '../../places/presentation/place_details_page.dart';
 import '../../places/presentation/widgets/place_card.dart';
+import '../../routing/domain/routing_service.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({
     super.key,
     required this.repository,
     required this.favorites,
+    this.routingService,
   });
 
   final PlaceRepository? repository;
   final FavoritesController favorites;
+  final RoutingService? routingService;
 
   @override
   State<FavoritesPage> createState() => _FavoritesPageState();
@@ -58,6 +61,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
             place: place,
             repository: widget.repository,
             favorites: widget.favorites,
+            routingService: widget.routingService,
           ),
         ),
       );

@@ -8,6 +8,7 @@ import '../../places/domain/entities/place.dart';
 import '../../places/domain/repositories/place_repository.dart';
 import '../../places/presentation/place_details_page.dart';
 import '../../places/presentation/widgets/place_card.dart';
+import '../../routing/domain/routing_service.dart';
 import '../../tour_guide/domain/repositories/tour_guide_repository.dart';
 import '../../tour_guide/presentation/tour_guide_page.dart';
 
@@ -17,6 +18,7 @@ class HomePage extends StatefulWidget {
     required this.repository,
     required this.favorites,
     required this.tourGuideRepository,
+    this.routingService,
     required this.onExplore,
     required this.onMap,
   });
@@ -24,6 +26,7 @@ class HomePage extends StatefulWidget {
   final PlaceRepository? repository;
   final FavoritesController favorites;
   final TourGuideRepository? tourGuideRepository;
+  final RoutingService? routingService;
   final VoidCallback onExplore;
   final VoidCallback onMap;
 
@@ -80,6 +83,7 @@ class _HomePageState extends State<HomePage> {
             place: place,
             repository: widget.repository,
             favorites: widget.favorites,
+            routingService: widget.routingService,
           ),
         ),
       );
@@ -135,7 +139,10 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  _Hero(onExplore: widget.onExplore),
+                  _WelcomePanel(
+                    onExplore: widget.onExplore,
+                    onMap: widget.onMap,
+                  ),
                   if (isOffline) ...[
                     const SizedBox(height: 12),
                     const OfflineCatalogueNotice(),
@@ -223,56 +230,62 @@ class _HomeData {
   final List<String> categories;
 }
 
-class _Hero extends StatelessWidget {
-  const _Hero({required this.onExplore});
+class _WelcomePanel extends StatelessWidget {
+  const _WelcomePanel({required this.onExplore, required this.onMap});
+
   final VoidCallback onExplore;
+  final VoidCallback onMap;
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(24),
+  Widget build(BuildContext context) => DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF102D28), Color(0xFF193F38), Color(0xFF3D6B5A)],
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-          ),
+          color: Theme.of(context).colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: Stack(
-          children: [
-            const Positioned(
-              left: -12,
-              bottom: -36,
-              child: Icon(Icons.terrain_rounded,
-                  color: Color(0x3396E1BF), size: 158),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.wb_sunny_outlined,
-                    color: Color(0xFFE5B65A), size: 30),
-                const SizedBox(height: 20),
-                const Text('اكتشف وادي سوف',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 29,
-                        fontWeight: FontWeight.w900)),
-                const SizedBox(height: 8),
-                const Text('من الرمال الذهبية إلى واحات النخيل',
-                    style: TextStyle(
-                        color: Color(0xFFE4F0EA), fontSize: 16, height: 1.4)),
-                const SizedBox(height: 20),
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFE5B65A),
-                      foregroundColor: const Color(0xFF102D28)),
-                  onPressed: onExplore,
-                  icon: const Icon(Icons.explore_outlined),
-                  label: const Text('استكشف الوادي'),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFD9A441),
+                  shape: BoxShape.circle,
                 ),
-              ],
-            ),
-          ],
+                child: const Icon(Icons.wb_sunny_outlined,
+                    color: Color(0xFF102D28)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ماذا تريد أن تكتشف؟',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 3),
+                    const Text('معالم الوادي وتجارب الزوار المنشورة'),
+                  ],
+                ),
+              ),
+              IconButton.filledTonal(
+                tooltip: 'استكشف الخريطة',
+                onPressed: onMap,
+                icon: const Icon(Icons.map_outlined),
+              ),
+              const SizedBox(width: 4),
+              IconButton.filled(
+                tooltip: 'استكشف المعالم',
+                onPressed: onExplore,
+                icon: const Icon(Icons.arrow_back_rounded),
+              ),
+            ],
+          ),
         ),
       );
 }
@@ -310,10 +323,10 @@ class _HomeSkeleton extends StatelessWidget {
               color: Theme.of(context).colorScheme.surfaceContainerHighest),
           const SizedBox(height: 20),
           Container(
-              height: 220,
+              height: 118,
               decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(30))),
+                  borderRadius: BorderRadius.circular(20))),
           const SizedBox(height: 18),
           Container(
               height: 58,

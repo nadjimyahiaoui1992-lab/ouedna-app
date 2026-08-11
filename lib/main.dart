@@ -8,6 +8,8 @@ import 'core/storage/favorites_controller.dart';
 import 'features/places/data/repositories/cached_place_repository.dart';
 import 'features/places/data/repositories/supabase_place_repository.dart';
 import 'features/places/domain/repositories/place_repository.dart';
+import 'features/routing/data/supabase_routing_service.dart';
+import 'features/routing/domain/routing_service.dart';
 import 'features/tour_guide/data/repositories/supabase_tour_guide_repository.dart';
 import 'features/tour_guide/domain/repositories/tour_guide_repository.dart';
 
@@ -18,6 +20,7 @@ Future<void> main() async {
   final favoritesController = FavoritesController(preferences);
   PlaceRepository? placeRepository;
   TourGuideRepository? tourGuideRepository;
+  RoutingService? routingService;
 
   try {
     await Supabase.initialize(
@@ -38,6 +41,7 @@ Future<void> main() async {
       }
       if (client.auth.currentSession != null) {
         tourGuideRepository = SupabaseTourGuideRepository(client);
+        routingService = SupabaseRoutingService(client);
       }
     } catch (_) {
       // Browsing public Souf360 content does not depend on anonymous login.
@@ -50,6 +54,7 @@ Future<void> main() async {
     SoufTourApp(
       placeRepository: placeRepository,
       tourGuideRepository: tourGuideRepository,
+      routingService: routingService,
       favoritesController: favoritesController,
       isBackendConfigured: placeRepository != null,
     ),

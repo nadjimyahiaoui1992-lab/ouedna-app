@@ -7,6 +7,7 @@ import '../features/favorites/presentation/favorites_page.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/map/presentation/souf_map_page.dart';
 import '../features/places/domain/repositories/place_repository.dart';
+import '../features/routing/domain/routing_service.dart';
 import '../features/places/presentation/places_page.dart';
 import '../features/tour_guide/domain/repositories/tour_guide_repository.dart';
 
@@ -15,12 +16,14 @@ class SoufTourApp extends StatefulWidget {
     super.key,
     required this.placeRepository,
     required this.tourGuideRepository,
+    this.routingService,
     required this.favoritesController,
     required this.isBackendConfigured,
   });
 
   final PlaceRepository? placeRepository;
   final TourGuideRepository? tourGuideRepository;
+  final RoutingService? routingService;
   final FavoritesController favoritesController;
   final bool isBackendConfigured;
 
@@ -45,18 +48,25 @@ class _SoufTourAppState extends State<SoufTourApp> {
         repository: widget.placeRepository,
         favorites: widget.favoritesController,
         tourGuideRepository: widget.tourGuideRepository,
+        routingService: widget.routingService,
         onExplore: () => _select(1),
         onMap: () => _select(2),
       ),
       PlacesPage(
-          repository: widget.placeRepository,
-          favorites: widget.favoritesController),
+        repository: widget.placeRepository,
+        favorites: widget.favoritesController,
+        routingService: widget.routingService,
+      ),
       SoufMapPage(
-          repository: widget.placeRepository,
-          favorites: widget.favoritesController),
+        repository: widget.placeRepository,
+        favorites: widget.favoritesController,
+        routingService: widget.routingService,
+      ),
       FavoritesPage(
-          repository: widget.placeRepository,
-          favorites: widget.favoritesController),
+        repository: widget.placeRepository,
+        favorites: widget.favoritesController,
+        routingService: widget.routingService,
+      ),
     ];
 
     return MaterialApp(

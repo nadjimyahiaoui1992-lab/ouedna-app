@@ -6,6 +6,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/storage/favorites_controller.dart';
+import '../../routing/domain/routing_service.dart';
+import '../../routing/presentation/navigation_page.dart';
 import '../domain/entities/place.dart';
 import '../domain/entities/place_gallery_image.dart';
 import '../domain/repositories/place_repository.dart';
@@ -16,11 +18,13 @@ class PlaceDetailsPage extends StatefulWidget {
     required this.place,
     required this.repository,
     required this.favorites,
+    this.routingService,
   });
 
   final Place place;
   final PlaceRepository? repository;
   final FavoritesController favorites;
+  final RoutingService? routingService;
 
   @override
   State<PlaceDetailsPage> createState() => _PlaceDetailsPageState();
@@ -125,7 +129,10 @@ class _PlaceDetailsPageState extends State<PlaceDetailsPage> {
                           .bodyLarge
                           ?.copyWith(height: 1.65)),
                   const SizedBox(height: 28),
-                  _Actions(place: place),
+                  _Actions(
+                    place: place,
+                    routingService: widget.routingService,
+                  ),
                   const SizedBox(height: 30),
                   FutureBuilder<List<PlaceGalleryImage>>(
                     future: _galleryFuture,
@@ -188,9 +195,8 @@ class _PlaceDetailsPageState extends State<PlaceDetailsPage> {
       place.instagram?.isNotEmpty == true;
 
   Future<void> _sharePlace(Place place) async {
-    final coordinates = place.hasCoordinates
-        ? '\nhttps://www.google.com/maps/search/?api=1&query=${place.latitude},${place.longitude}'
-        : '';
+    final coordinates =
+        place.hasCoordinates ? '\n${place.latitude}, ${place.longitude}' : '';
     await Share.share('${place.name}\n${place.description}$coordinates');
   }
 
@@ -250,48 +256,29 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _Actions extends StatelessWidget {
-  const _Actions({required this.place});
+  const _Actions({required this.place, required this.routingService});
+
   final Place place;
+  final RoutingService? routingService;
 
   @override
-  Widget build(BuildContext context) {
-    final externalMapLink = Uri.tryParse(place.mapLink ?? '');
-    final directionsUri = place.hasCoordinates
-        ? Uri.parse(
-            'geo:${place.latitude},${place.longitude}?q=${Uri.encodeComponent(place.name)}',
-          )
-        : externalMapLink;
-    final mapUri = place.hasCoordinates
-        ? Uri.parse(
-            'https://www.google.com/maps/search/?api=1&query=${place.latitude},${place.longitude}',
-          )
-        : externalMapLink;
-
-    return Row(
-      children: [
-        Expanded(
-          child: FilledButton.icon(
-            onPressed: directionsUri == null
-                ? null
-                : () => launchUrl(
-                      directionsUri,
-                      mode: LaunchMode.externalNonBrowserApplication,
-                    ),
-            icon: const Icon(Icons.directions_outlined),
-            label: const Text('الوصول للمكان'),
-          ),
-        ),
-        const SizedBox(width: 10),
-        OutlinedButton.icon(
-          onPressed: mapUri == null
+  Widget build(BuildContext context) => SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: !place.hasCoordinates
               ? null
-              : () => launchUrl(mapUri, mode: LaunchMode.externalApplication),
-          icon: const Icon(Icons.map_outlined),
-          label: const Text('الخريطة'),
+              : () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => NavigationPage(
+                        place: place,
+                        routingService: routingService,
+                      ),
+                    ),
+                  ),
+          icon: const Icon(Icons.directions_outlined),
+          label: const Text('الوصول إلى المكان'),
         ),
-      ],
-    );
-  }
+      );
 }
 
 class _Gallery extends StatelessWidget {
