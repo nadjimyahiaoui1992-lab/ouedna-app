@@ -48,7 +48,8 @@ class WelcomePage extends StatelessWidget {
                         _BrandMark(),
                         const Spacer(),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: const Color(0x33D9A441),
                             borderRadius: BorderRadius.circular(20),
@@ -176,7 +177,9 @@ class _WelcomeValue extends StatelessWidget {
           const SizedBox(width: 10),
           Text(text,
               style: const TextStyle(
-                  color: Color(0xFFFDF7EE), fontWeight: FontWeight.w700, fontSize: 13.5)),
+                  color: Color(0xFFFDF7EE),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13.5)),
         ],
       );
 }

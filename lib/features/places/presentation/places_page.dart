@@ -154,93 +154,96 @@ class _PlacesPageState extends State<PlacesPage> {
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _openAddPlace,
           backgroundColor: const Color(0xFF193F38),
-          icon: const Icon(Icons.add_location_alt_rounded, color: Color(0xFFD9A441)),
-          label: const Text('اقترح معلماً', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          icon: const Icon(Icons.add_location_alt_rounded,
+              color: Color(0xFFD9A441)),
+          label: const Text('اقترح معلماً',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         ),
         body: SafeArea(
           child: Column(
             children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('المعالم والأماكن',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w900)),
-                  const SizedBox(height: 5),
-                  Text('استكشف الأماكن المنشورة من Souf360',
-                      style: Theme.of(context).textTheme.bodyMedium),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _searchController,
-                    onChanged: _onSearchChanged,
-                    textInputAction: TextInputAction.search,
-                    decoration: InputDecoration(
-                      hintText: 'ابحث بالاسم أو الوصف أو المنطقة...',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchController.text.isEmpty
-                          ? null
-                          : IconButton(
-                              tooltip: 'مسح البحث',
-                              onPressed: () {
-                                _searchController.clear();
-                                _refresh();
-                              },
-                              icon: const Icon(Icons.close),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (_categories.isNotEmpty)
-              SizedBox(
-                height: 46,
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  scrollDirection: Axis.horizontal,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ChoiceChip(
-                      label: const Text('الكل'),
-                      selected: _selectedCategory == null,
-                      onSelected: (_) {
-                        setState(() => _selectedCategory = null);
-                        _refresh();
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    ..._categories.map(
-                      (category) => Padding(
-                        padding: const EdgeInsetsDirectional.only(end: 8),
-                        child: ChoiceChip(
-                          label: Text(category),
-                          selected: _selectedCategory == category,
-                          onSelected: (_) {
-                            setState(() => _selectedCategory = category);
-                            _refresh();
-                          },
-                        ),
+                    Text('المعالم والأماكن',
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 5),
+                    Text('استكشف الأماكن المنشورة من Souf360',
+                        style: Theme.of(context).textTheme.bodyMedium),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _searchController,
+                      onChanged: _onSearchChanged,
+                      textInputAction: TextInputAction.search,
+                      decoration: InputDecoration(
+                        hintText: 'ابحث بالاسم أو الوصف أو المنطقة...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchController.text.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'مسح البحث',
+                                onPressed: () {
+                                  _searchController.clear();
+                                  _refresh();
+                                },
+                                icon: const Icon(Icons.close),
+                              ),
                       ),
                     ),
                   ],
                 ),
               ),
-            if (widget.repository is OfflineAwarePlaceRepository &&
-                (widget.repository as OfflineAwarePlaceRepository)
-                    .isUsingCachedData)
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 6, 20, 2),
-                child: OfflineCatalogueNotice(),
-              ),
-            const SizedBox(height: 6),
-            Expanded(child: _buildResults()),
-          ],
+              if (_categories.isNotEmpty)
+                SizedBox(
+                  height: 46,
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('الكل'),
+                        selected: _selectedCategory == null,
+                        onSelected: (_) {
+                          setState(() => _selectedCategory = null);
+                          _refresh();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      ..._categories.map(
+                        (category) => Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 8),
+                          child: ChoiceChip(
+                            label: Text(category),
+                            selected: _selectedCategory == category,
+                            onSelected: (_) {
+                              setState(() => _selectedCategory = category);
+                              _refresh();
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (widget.repository is OfflineAwarePlaceRepository &&
+                  (widget.repository as OfflineAwarePlaceRepository)
+                      .isUsingCachedData)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 6, 20, 2),
+                  child: OfflineCatalogueNotice(),
+                ),
+              const SizedBox(height: 6),
+              Expanded(child: _buildResults()),
+            ],
+          ),
         ),
-      ),
-    );
+      );
 
   Widget _buildResults() {
     if (_loading) return const _PlacesSkeleton();

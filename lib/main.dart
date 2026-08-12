@@ -43,10 +43,10 @@ Future<void> main() async {
       // Always initialize the repository if we have a client.
       // The repository will handle authentication internally or via the function call.
       tourGuideRepository = SupabaseTourGuideRepository(client);
-      
+
       if (client.auth.currentSession == null) {
         // Try to sign in anonymously to get a secure session for the AI Assistant.
-        // If it fails (e.g. disabled in dashboard), the assistant will fallback 
+        // If it fails (e.g. disabled in dashboard), the assistant will fallback
         // to a restricted mode or the function will handle it.
         await client.auth.signInAnonymously();
       }

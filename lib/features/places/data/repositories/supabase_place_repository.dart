@@ -140,7 +140,8 @@ class SupabasePlaceRepository implements PlaceRepository {
     String? imageUrl;
     if (imageBytes != null && imageBytes.isNotEmpty) {
       final ext = imageFileName?.split('.').last.toLowerCase() ?? 'jpg';
-      final fileName = 'places/visitor_${DateTime.now().millisecondsSinceEpoch}_${_randomString(6)}.$ext';
+      final fileName =
+          'places/visitor_${DateTime.now().millisecondsSinceEpoch}_${_randomString(6)}.$ext';
       await _client.storage.from('images').uploadBinary(
             fileName,
             imageBytes,
@@ -152,13 +153,17 @@ class SupabasePlaceRepository implements PlaceRepository {
     final data = {
       'name': normalizedName,
       'main_category': mainCategory,
-      'sub_category': subCategory?.trim().isNotEmpty == true ? subCategory!.trim() : null,
-      'description': description?.trim().isNotEmpty == true ? description!.trim() : null,
+      'sub_category':
+          subCategory?.trim().isNotEmpty == true ? subCategory!.trim() : null,
+      'description':
+          description?.trim().isNotEmpty == true ? description!.trim() : null,
       'address': address?.trim().isNotEmpty == true ? address!.trim() : null,
-      'municipality': municipality?.trim().isNotEmpty == true ? municipality!.trim() : null,
+      'municipality':
+          municipality?.trim().isNotEmpty == true ? municipality!.trim() : null,
       'phone': phone?.trim().isNotEmpty == true ? phone!.trim() : null,
       'map_link': mapLink?.trim().isNotEmpty == true ? mapLink!.trim() : null,
-      'opening_hours': openingHours?.trim().isNotEmpty == true ? openingHours!.trim() : null,
+      'opening_hours':
+          openingHours?.trim().isNotEmpty == true ? openingHours!.trim() : null,
       'image_url': imageUrl,
       'status': 'قيد المراجعة',
     };

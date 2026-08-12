@@ -89,7 +89,8 @@ class _AddPlaceVisitorDialogState extends State<AddPlaceVisitorDialog> {
     final repository = widget.repository;
     if (repository == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('عذراً، خدمة الإضافة غير متاحة حالياً بدون اتصال.')),
+        const SnackBar(
+            content: Text('عذراً، خدمة الإضافة غير متاحة حالياً بدون اتصال.')),
       );
       return;
     }
@@ -121,14 +122,17 @@ class _AddPlaceVisitorDialogState extends State<AddPlaceVisitorDialog> {
       Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('تم إرسال المعلم بنجاح! سيتم مراجعته ونشره قريباً من طرف الإدارة.'),
+          content: Text(
+              'تم إرسال المعلم بنجاح! سيتم مراجعته ونشره قريباً من طرف الإدارة.'),
           backgroundColor: Color(0xFF193F38),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر إرسال المعلم: $e'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text('تعذر إرسال المعلم: $e'),
+            backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -155,14 +159,20 @@ class _AddPlaceVisitorDialogState extends State<AddPlaceVisitorDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'اسم المعلم أو المكان *'),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'يرجى إدخال اسم المعلم' : null,
+                  decoration: const InputDecoration(
+                      labelText: 'اسم المعلم أو المكان *'),
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'يرجى إدخال اسم المعلم'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   value: _mainCategory,
-                  decoration: const InputDecoration(labelText: 'التصنيف الرئيسي *'),
-                  items: _categories.keys.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  decoration:
+                      const InputDecoration(labelText: 'التصنيف الرئيسي *'),
+                  items: _categories.keys
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .toList(),
                   onChanged: (val) {
                     if (val != null) {
                       setState(() {
@@ -177,8 +187,11 @@ class _AddPlaceVisitorDialogState extends State<AddPlaceVisitorDialog> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     value: _subCategory,
-                    decoration: const InputDecoration(labelText: 'التصنيف الفرعي'),
-                    items: _subcategories.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    decoration:
+                        const InputDecoration(labelText: 'التصنيف الفرعي'),
+                    items: _subcategories
+                        .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                        .toList(),
                     onChanged: (val) => setState(() => _subCategory = val),
                   ),
                 ],
@@ -186,7 +199,8 @@ class _AddPlaceVisitorDialogState extends State<AddPlaceVisitorDialog> {
                 TextFormField(
                   controller: _descriptionController,
                   maxLines: 3,
-                  decoration: const InputDecoration(labelText: 'وصف المعلم / نبذة تعريفيّة'),
+                  decoration: const InputDecoration(
+                      labelText: 'وصف المعلم / نبذة تعريفيّة'),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -194,7 +208,8 @@ class _AddPlaceVisitorDialogState extends State<AddPlaceVisitorDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _addressController,
-                        decoration: const InputDecoration(labelText: 'العنوان أو الحي'),
+                        decoration:
+                            const InputDecoration(labelText: 'العنوان أو الحي'),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -212,7 +227,8 @@ class _AddPlaceVisitorDialogState extends State<AddPlaceVisitorDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _phoneController,
-                        decoration: const InputDecoration(labelText: 'رقم الهاتف'),
+                        decoration:
+                            const InputDecoration(labelText: 'رقم الهاتف'),
                         keyboardType: TextInputType.phone,
                       ),
                     ),
@@ -220,7 +236,8 @@ class _AddPlaceVisitorDialogState extends State<AddPlaceVisitorDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _openingHoursController,
-                        decoration: const InputDecoration(labelText: 'ساعات العمل'),
+                        decoration:
+                            const InputDecoration(labelText: 'ساعات العمل'),
                       ),
                     ),
                   ],
@@ -228,22 +245,27 @@ class _AddPlaceVisitorDialogState extends State<AddPlaceVisitorDialog> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _mapLinkController,
-                  decoration: const InputDecoration(labelText: 'رابط الخريطة (Google Maps URL)'),
+                  decoration: const InputDecoration(
+                      labelText: 'رابط الخريطة (Google Maps URL)'),
                 ),
                 const SizedBox(height: 16),
-                const Text('صورة المعلم البارزة', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('صورة المعلم البارزة',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     ElevatedButton.icon(
                       onPressed: _pickImage,
                       icon: const Icon(Icons.image),
-                      label: Text(_selectedImage == null ? 'اختر صورة' : 'تغيير الصورة'),
+                      label: Text(_selectedImage == null
+                          ? 'اختر صورة'
+                          : 'تغيير الصورة'),
                     ),
                     const SizedBox(width: 12),
                     if (_selectedImage != null)
                       const Expanded(
-                        child: Text('تم اختيار صورة بنجاح', style: TextStyle(color: Colors.green)),
+                        child: Text('تم اختيار صورة بنجاح',
+                            style: TextStyle(color: Colors.green)),
                       ),
                   ],
                 ),
@@ -254,15 +276,22 @@ class _AddPlaceVisitorDialogState extends State<AddPlaceVisitorDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
+          onPressed:
+              _isSubmitting ? null : () => Navigator.of(context).pop(false),
           child: const Text('إلغاء'),
         ),
         ElevatedButton(
           onPressed: _isSubmitting ? null : _submit,
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF193F38)),
+          style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF193F38)),
           child: _isSubmitting
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Text('إرسال للمراجعة', style: TextStyle(color: Colors.white)),
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white))
+              : const Text('إرسال للمراجعة',
+                  style: TextStyle(color: Colors.white)),
         ),
       ],
     );

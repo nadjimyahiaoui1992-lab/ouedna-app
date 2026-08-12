@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class ImmersiveExperiencePage extends StatelessWidget {
-  const ImmersiveExperiencePage({super.key, required this.title, required this.subtitle, this.vrUrl});
+  const ImmersiveExperiencePage(
+      {super.key, required this.title, required this.subtitle, this.vrUrl});
 
   final String title;
   final String subtitle;
@@ -56,13 +57,16 @@ class ImmersiveExperiencePage extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               subtitle,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
+              style:
+                  Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
             ),
             const Spacer(),
             FilledButton.icon(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم تشغيل عرض الواقع المعزز والافتراضي بنجاح.')),
+                  const SnackBar(
+                      content:
+                          Text('تم تشغيل عرض الواقع المعزز والافتراضي بنجاح.')),
                 );
               },
               icon: const Icon(Icons.play_circle_outline_rounded),
