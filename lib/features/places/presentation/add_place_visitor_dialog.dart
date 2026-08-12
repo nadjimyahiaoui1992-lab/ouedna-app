@@ -125,7 +125,7 @@ class _AddPlaceVisitorDialogState extends State<AddPlaceVisitorDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-              'تم إرسال المعلم بنجاح! سيتم مراجعته ونشره قريباً من طرف الإدارة.'),
+              'تم إرسال الاقتراح إلى لوحة الإدارة مباشرة. سيظهر للزوار بعد الاعتماد فقط.'),
           backgroundColor: Color(0xFF193F38),
         ),
       );
