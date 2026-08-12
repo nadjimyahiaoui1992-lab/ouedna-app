@@ -8,6 +8,7 @@ import '../../../core/widgets/emergency_assistance_sheet.dart';
 import '../../../core/widgets/offline_catalogue_notice.dart';
 import '../../places/domain/entities/place.dart';
 import '../../places/domain/repositories/place_repository.dart';
+import '../../places/presentation/add_place_visitor_dialog.dart';
 import '../../places/presentation/place_details_page.dart';
 import '../../places/presentation/widgets/place_card.dart';
 import '../../compass/presentation/compass_page.dart';
@@ -93,6 +94,11 @@ class _HomePageState extends State<HomePage> {
 
   void _openEmergency() => showEmergencyAssistanceSheet(context);
 
+  void _openVisitorPlaceSubmission() => showDialog<void>(
+        context: context,
+        builder: (_) => AddPlaceVisitorDialog(repository: widget.repository),
+      );
+
   void _openPlace(Place place) => Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => PlaceDetailsPage(
@@ -133,45 +139,56 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Row(
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Souf 360 • سوف 360',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                    color:
-                                        Theme.of(context).colorScheme.primary),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'الدليل السياحي لوادي سوف',
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.5,
-                                    ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0x22D9A441),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFD9A441)),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Souf 360 • سوف 360',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'الدليل السياحي لوادي سوف',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.5,
+                                  ),
+                            ),
+                          ],
                         ),
-                        child: const Text(
-                          'عاصمة الألف قبة وقبة',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFFD9A441),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0x22D9A441),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: const Color(0xFFD9A441)),
+                          ),
+                          child: const Text(
+                            'عاصمة الألف قبة وقبة',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFFD9A441),
+                            ),
                           ),
                         ),
                       ),
@@ -184,6 +201,8 @@ class _HomePageState extends State<HomePage> {
                     onMap: widget.onMap,
                     onEmergency: _openEmergency,
                   ),
+                  const SizedBox(height: 12),
+                  _VisitorPlaceCallToAction(onTap: _openVisitorPlaceSubmission),
                   const SizedBox(height: 18),
                   _WelcomePanel(
                     heroPlace: heroPlace,
@@ -317,7 +336,7 @@ class _WelcomePanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'ALGERIA 360 AI • SOUF360',
+                      'SOUF 360 • وادي سوف',
                       style: TextStyle(
                         color: Color(0xFFD9A441),
                         fontSize: 12,
@@ -377,6 +396,65 @@ class _WelcomePanel extends StatelessWidget {
           ),
         ),
       );
+}
+
+class _VisitorPlaceCallToAction extends StatelessWidget {
+  const _VisitorPlaceCallToAction({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      label: 'اقترح معلماً جديداً',
+      child: Material(
+        color: scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            child: Row(
+              children: [
+                Icon(Icons.add_location_alt_rounded, color: scheme.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'اقترح معلماً جديداً',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: scheme.onPrimaryContainer,
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'أرسل المعلومات والصورة، وتنشرها الإدارة بعد المراجعة.',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: scheme.onPrimaryContainer,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.arrow_back_ios_new_rounded,
+                    size: 16, color: scheme.primary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _CategoryRail extends StatelessWidget {
