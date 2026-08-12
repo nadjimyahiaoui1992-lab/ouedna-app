@@ -1,0 +1,4 @@
+{
+  "project_id": "cwbenhuiextfoiyfboxo",
+  "query": "SELECT name, setting FROM net.http_get('https://cwbenhuiextfoiyfboxo.supabase.co/auth/v1/settings');"
+}

@@ -1,0 +1,4 @@
+{
+  "project_id": "cwbenhuiextfoiyfboxo",
+  "query": "SELECT count(*) FROM auth.users WHERE is_anonymous = true;"
+}

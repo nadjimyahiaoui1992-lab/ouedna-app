@@ -131,17 +131,46 @@ class _HomePageState extends State<HomePage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
                 children: [
-                  Text(
-                    'سوف 360',
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.w900),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'اكتشف وادي سوف من كل زاوية',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Souf 360 • سوف 360',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'الدليل السياحي لوادي سوف',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0x22D9A441),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFD9A441)),
+                        ),
+                        child: const Text(
+                          'عاصمة الألف قبة وقبة',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFFD9A441),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   _HomeActionRail(
@@ -282,13 +311,23 @@ class _WelcomePanel extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Text(
+                      'ALGERIA 360 AI • SOUF360',
+                      style: TextStyle(
+                        color: Color(0xFFD9A441),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
                     Text(
-                      heroPlace?.name ?? 'رحلتك تبدأ من هنا',
+                      heroPlace?.name ?? 'رحلتك الذكية تبدأ من هنا',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 23,
+                        fontSize: 21,
                         fontWeight: FontWeight.w900,
                       ),
                     ),

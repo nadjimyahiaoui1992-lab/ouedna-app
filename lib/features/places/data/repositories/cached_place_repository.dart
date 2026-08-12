@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/entities/place.dart';
@@ -80,6 +81,34 @@ class CachedPlaceRepository
 
   @override
   Stream<void> watchPublishedPlaces() => _remote.watchPublishedPlaces();
+
+  @override
+  Future<void> submitVisitorPlace({
+    required String name,
+    required String mainCategory,
+    String? subCategory,
+    String? description,
+    String? address,
+    String? municipality,
+    String? phone,
+    String? mapLink,
+    String? openingHours,
+    Uint8List? imageBytes,
+    String? imageFileName,
+  }) =>
+      _remote.submitVisitorPlace(
+        name: name,
+        mainCategory: mainCategory,
+        subCategory: subCategory,
+        description: description,
+        address: address,
+        municipality: municipality,
+        phone: phone,
+        mapLink: mapLink,
+        openingHours: openingHours,
+        imageBytes: imageBytes,
+        imageFileName: imageFileName,
+      );
 
   bool _isDefaultRequest(
           {String? query, String? category, required int offset}) =>

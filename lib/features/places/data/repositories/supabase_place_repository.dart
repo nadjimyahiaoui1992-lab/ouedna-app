@@ -1,5 +1,6 @@
 import 'dart:async';
-
+import 'dart:math';
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/errors/app_exception.dart';
@@ -115,6 +116,67 @@ class SupabasePlaceRepository implements PlaceRepository {
     } catch (_) {
       return const [];
     }
+  }
+
+  @override
+  Future<void> submitVisitorPlace({
+    required String name,
+    required String mainCategory,
+    String? subCategory,
+    String? description,
+    String? address,
+    String? municipality,
+    String? phone,
+    String? mapLink,
+    String? openingHours,
+    Uint8List? imageBytes,
+    String? imageFileName,
+  }) async {
+    final normalizedName = name.trim();
+    if (normalizedName.isEmpty) {
+      throw const AppException('يرجى إدخال اسم المعلم.');
+    }
+
+    String? imageUrl;
+    if (imageBytes != null && imageBytes.isNotEmpty) {
+      final ext = imageFileName?.split('.').last.toLowerCase() ?? 'jpg';
+      final fileName = 'places/visitor_${DateTime.now().millisecondsSinceEpoch}_${_randomString(6)}.$ext';
+      await _client.storage.from('images').uploadBinary(
+            fileName,
+            imageBytes,
+            fileOptions: FileOptions(contentType: 'image/$ext', upsert: true),
+          );
+      imageUrl = _client.storage.from('images').getPublicUrl(fileName);
+    }
+
+    final data = {
+      'name': normalizedName,
+      'main_category': mainCategory,
+      'sub_category': subCategory?.trim().isNotEmpty == true ? subCategory!.trim() : null,
+      'description': description?.trim().isNotEmpty == true ? description!.trim() : null,
+      'address': address?.trim().isNotEmpty == true ? address!.trim() : null,
+      'municipality': municipality?.trim().isNotEmpty == true ? municipality!.trim() : null,
+      'phone': phone?.trim().isNotEmpty == true ? phone!.trim() : null,
+      'map_link': mapLink?.trim().isNotEmpty == true ? mapLink!.trim() : null,
+      'opening_hours': openingHours?.trim().isNotEmpty == true ? openingHours!.trim() : null,
+      'image_url': imageUrl,
+      'status': 'قيد المراجعة',
+    };
+
+    try {
+      await _client.from('places').insert(data);
+    } catch (e) {
+      throw AppException('تعذر إرسال المعلم: $e');
+    }
+  }
+
+  String _randomString(int length) {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    final rnd = Random();
+    return String.fromCharCodes(Iterable.generate(
+      length,
+      (_) => chars.codeUnitAt(rnd.nextInt(chars.length)),
+    ));
   }
 
   @override

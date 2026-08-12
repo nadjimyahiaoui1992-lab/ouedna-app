@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:souf_tour/features/compass/domain/compass_planner.dart';
-import 'package:souf_tour/features/compass/domain/itinerary_models.dart';
-import 'package:souf_tour/features/places/domain/entities/place.dart';
+import 'package:algeria_360_ai/features/compass/domain/compass_planner.dart';
+import 'package:algeria_360_ai/features/compass/domain/itinerary_models.dart';
+import 'package:algeria_360_ai/features/places/domain/entities/place.dart';
 
 void main() {
   const planner = CompassPlanner();

@@ -43,47 +43,69 @@ class WelcomePage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _BrandMark(),
-                    const Spacer(flex: 5),
+                    Row(
+                      children: [
+                        _BrandMark(),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0x33D9A441),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: const Color(0xFFD9A441)),
+                          ),
+                          child: const Text(
+                            'المنصة الرسمية لوادي سوف',
+                            style: TextStyle(
+                              color: Color(0xFFFBF7EF),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(flex: 4),
                     const Text(
-                      'سوف 360',
+                      'اكتشف سوف',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 42,
+                        fontSize: 38,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -.5,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     const Text(
-                      'اكتشف وادي سوف من كل زاوية',
+                      'عاصمة الألف قبة وقبة',
                       style: TextStyle(
-                        color: Color(0xFFFDF7EE),
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFD9A441),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
                       ),
                     ),
                     const SizedBox(height: 12),
                     const Text(
-                      'دليل سياحي عصري للمعالم المحلية والخريطة الذكية والتجارب التي ينشرها مجتمع سوف.',
+                      'اكتشف سحر الوادي... حيث تبدأ الحكاية وتنتهي الذكريات. كثبان ذهبية، وغيطان ونخيل، وواحات وأراضٍ فلاحية تخضّرُ وسط الصحراء.',
                       style: TextStyle(
                         color: Color(0xFFE0EEE7),
-                        fontSize: 16,
-                        height: 1.5,
+                        fontSize: 15,
+                        height: 1.55,
                       ),
                     ),
-                    const SizedBox(height: 22),
-                    const _WelcomeValue(
-                        icon: Icons.map_outlined,
-                        text: 'خريطة تفاعلية ومعالم محلية'),
-                    const SizedBox(height: 10),
-                    const _WelcomeValue(
-                        icon: Icons.explore_outlined,
-                        text: 'مسار يناسب وقتك واهتماماتك'),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 20),
                     const _WelcomeValue(
                         icon: Icons.auto_awesome_outlined,
-                        text: 'دليل ذكي للمعلومات والنصائح'),
+                        text: 'مساعد سياحي ذكي مدمج (AI Concierge)'),
+                    const SizedBox(height: 10),
+                    const _WelcomeValue(
+                        icon: Icons.map_outlined,
+                        text: 'خرائط وملاحة ذكية مع طبقة الأقمار الصناعية'),
+                    const SizedBox(height: 10),
+                    const _WelcomeValue(
+                        icon: Icons.forum_outlined,
+                        text: 'مجتمع الزوار وتجارب الرحلات الموثقة'),
                     const Spacer(flex: 3),
                     SizedBox(
                       width: double.infinity,
@@ -99,7 +121,7 @@ class WelcomePage extends StatelessWidget {
                         ),
                         onPressed: onContinue,
                         icon: const Icon(Icons.arrow_back_rounded),
-                        label: const Text('ابدأ الاستكشاف'),
+                        label: const Text('ابدأ الاستكشاف الذكي'),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -109,7 +131,7 @@ class WelcomePage extends StatelessWidget {
                         style: TextButton.styleFrom(
                           foregroundColor: const Color(0xFFFDF7EE),
                         ),
-                        child: const Text('دخول كزائر'),
+                        child: const Text('دخول مباشر كزائر'),
                       ),
                     ),
                   ],
@@ -124,14 +146,14 @@ class WelcomePage extends StatelessWidget {
 class _BrandMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
-        width: 50,
-        height: 50,
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
           color: const Color(0xDDFBF7EF),
           borderRadius: BorderRadius.circular(17),
         ),
-        child: const Icon(Icons.landscape_rounded,
-            color: Color(0xFF193F38), size: 28),
+        child: const Icon(Icons.travel_explore_rounded,
+            color: Color(0xFF193F38), size: 30),
       );
 }
 
@@ -154,7 +176,7 @@ class _WelcomeValue extends StatelessWidget {
           const SizedBox(width: 10),
           Text(text,
               style: const TextStyle(
-                  color: Color(0xFFFDF7EE), fontWeight: FontWeight.w700)),
+                  color: Color(0xFFFDF7EE), fontWeight: FontWeight.w700, fontSize: 13.5)),
         ],
       );
 }

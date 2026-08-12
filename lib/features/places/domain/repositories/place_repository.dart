@@ -24,4 +24,18 @@ abstract interface class PlaceRepository {
 
   /// Emits when Souf360 changes the public places catalogue.
   Stream<void> watchPublishedPlaces();
+
+  Future<void> submitVisitorPlace({
+    required String name,
+    required String mainCategory,
+    String? subCategory,
+    String? description,
+    String? address,
+    String? municipality,
+    String? phone,
+    String? mapLink,
+    String? openingHours,
+    Uint8List? imageBytes,
+    String? imageFileName,
+  });
 }

@@ -8,6 +8,7 @@ import '../domain/entities/place.dart';
 import '../domain/entities/place_page.dart';
 import '../domain/repositories/place_repository.dart';
 import '../../routing/domain/routing_service.dart';
+import 'add_place_visitor_dialog.dart';
 import 'place_details_page.dart';
 import 'widgets/place_card.dart';
 
@@ -141,10 +142,24 @@ class _PlacesPageState extends State<PlacesPage> {
         ),
       );
 
+  void _openAddPlace() {
+    showDialog(
+      context: context,
+      builder: (_) => AddPlaceVisitorDialog(repository: widget.repository),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) => SafeArea(
-        child: Column(
-          children: [
+  Widget build(BuildContext context) => Scaffold(
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _openAddPlace,
+          backgroundColor: const Color(0xFF193F38),
+          icon: const Icon(Icons.add_location_alt_rounded, color: Color(0xFFD9A441)),
+          label: const Text('اقترح معلماً', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
               child: Column(
@@ -224,7 +239,8 @@ class _PlacesPageState extends State<PlacesPage> {
             Expanded(child: _buildResults()),
           ],
         ),
-      );
+      ),
+    );
 
   Widget _buildResults() {
     if (_loading) return const _PlacesSkeleton();

@@ -40,14 +40,18 @@ Future<void> main() async {
     communityRepository = SupabaseCommunityRepository(client);
 
     try {
+      // Always initialize the repository if we have a client.
+      // The repository will handle authentication internally or via the function call.
+      tourGuideRepository = SupabaseTourGuideRepository(client);
+      
       if (client.auth.currentSession == null) {
+        // Try to sign in anonymously to get a secure session for the AI Assistant.
+        // If it fails (e.g. disabled in dashboard), the assistant will fallback 
+        // to a restricted mode or the function will handle it.
         await client.auth.signInAnonymously();
       }
-      if (client.auth.currentSession != null) {
-        tourGuideRepository = SupabaseTourGuideRepository(client);
-      }
     } catch (_) {
-      // Browsing public Souf360 content does not depend on anonymous login.
+      // Browsing public content remains available.
     }
   } catch (_) {
     // The UI remains usable and exposes retry states if backend setup fails.

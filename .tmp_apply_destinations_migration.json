@@ -1,0 +1,4 @@
+{
+  "project_id": "cwbenhuiextfoiyfboxo",
+  "query": "CREATE TABLE IF NOT EXISTS public.destinations ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name TEXT NOT NULL, wilaya TEXT NOT NULL, description TEXT, history TEXT, culture TEXT, best_time TEXT, duration TEXT, activities JSONB DEFAULT '[]'::jsonb, image_url TEXT, vr_url TEXT, ar_enabled BOOLEAN DEFAULT false, is_featured BOOLEAN DEFAULT false, created_at TIMESTAMPTZ DEFAULT now());"
+}

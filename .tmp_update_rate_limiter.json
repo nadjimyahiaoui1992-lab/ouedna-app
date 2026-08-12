@@ -1,0 +1,4 @@
+{
+  "project_id": "cwbenhuiextfoiyfboxo",
+  "query": "CREATE OR REPLACE FUNCTION public.consume_tour_guide_request(p_user_id text, p_window_seconds integer, p_max_requests integer) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER AS $$\ndeclare v_window_started_at timestamptz; v_allowed boolean; begin if p_user_id is null or p_window_seconds < 60 or p_window_seconds > 3600 or p_max_requests < 1 or p_max_requests > 100 then return false; end if; v_window_started_at := to_timestamp(floor(extract(epoch from now()) / p_window_seconds) * p_window_seconds); insert into private.tour_guide_rate_limits (user_id, window_started_at, request_count) values (p_user_id, v_window_started_at, 1) on conflict (user_id, window_started_at) do update set request_count = private.tour_guide_rate_limits.request_count + 1 where private.tour_guide_rate_limits.request_count < p_max_requests returning true into v_allowed; return coalesce(v_allowed, false); end; $$;"
+}
