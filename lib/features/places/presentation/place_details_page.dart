@@ -261,23 +261,59 @@ class _Actions extends StatelessWidget {
   final Place place;
   final RoutingService? routingService;
 
+  Future<void> _openExternalDirections(BuildContext context) async {
+    final destination = '${place.latitude},${place.longitude}';
+    final geoUri = Uri(
+      scheme: 'geo',
+      path: destination,
+      queryParameters: {'q': '$destination(${place.name})'},
+    );
+    try {
+      if (await launchUrl(geoUri, mode: LaunchMode.externalApplication)) return;
+    } catch (_) {
+      // A web fallback still gives visitors directions on devices without a map app.
+    }
+
+    final webUri = Uri.https('www.google.com', '/maps/dir/', {
+      'api': '1',
+      'destination': destination,
+    });
+    final launched =
+        await launchUrl(webUri, mode: LaunchMode.externalApplication);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر فتح تطبيق الخرائط على هذا الجهاز.')),
+      );
+    }
+  }
+
   @override
-  Widget build(BuildContext context) => SizedBox(
-        width: double.infinity,
-        child: FilledButton.icon(
-          onPressed: !place.hasCoordinates
-              ? null
-              : () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => NavigationPage(
-                        place: place,
-                        routingService: routingService,
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FilledButton.icon(
+            onPressed: !place.hasCoordinates
+                ? null
+                : () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => NavigationPage(
+                          place: place,
+                          routingService: routingService,
+                        ),
                       ),
                     ),
-                  ),
-          icon: const Icon(Icons.directions_outlined),
-          label: const Text('الوصول إلى المكان'),
-        ),
+            icon: const Icon(Icons.navigation_outlined),
+            label: const Text('الملاحة داخل التطبيق'),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: !place.hasCoordinates
+                ? null
+                : () => _openExternalDirections(context),
+            icon: const Icon(Icons.open_in_new_rounded),
+            label: const Text('فتح في تطبيق الخرائط'),
+          ),
+        ],
       );
 }
 

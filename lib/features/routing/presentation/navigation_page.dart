@@ -37,6 +37,7 @@ class _NavigationPageState extends State<NavigationPage> {
   RouteOption? _selectedRoute;
   TravelMode _mode = TravelMode.car;
   String? _error;
+  LocationException? _locationError;
   bool _loading = true;
   bool _navigating = false;
   bool _rerouting = false;
@@ -74,6 +75,7 @@ class _NavigationPageState extends State<NavigationPage> {
     setState(() {
       _loading = true;
       _error = null;
+      _locationError = null;
       _arrived = false;
     });
     try {
@@ -86,13 +88,28 @@ class _NavigationPageState extends State<NavigationPage> {
       setState(() {
         _loading = false;
         _error = error.message;
+        _locationError = error;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _loading = false;
         _error = 'تعذر تحديد موقعك. تحقق من الموقع والاتصال ثم أعد المحاولة.';
+        _locationError = null;
       });
+    }
+  }
+
+  Future<void> _openLocationRecovery() async {
+    switch (_locationError?.issue) {
+      case LocationIssue.serviceDisabled:
+        await _locationService.openDeviceLocationSettings();
+        return;
+      case LocationIssue.permissionDeniedForever:
+        await _locationService.openApplicationSettings();
+        return;
+      default:
+        return;
     }
   }
 
@@ -108,6 +125,10 @@ class _NavigationPageState extends State<NavigationPage> {
         placeId: widget.place.id,
         origin: RoutePoint(
             latitude: position.latitude, longitude: position.longitude),
+        destination: RoutePoint(
+          latitude: widget.place.latitude!,
+          longitude: widget.place.longitude!,
+        ),
         mode: _mode,
         alternatives: true,
       );
@@ -447,8 +468,14 @@ class _NavigationPageState extends State<NavigationPage> {
             const Center(child: CircularProgressIndicator())
           else if (_error != null)
             Center(
-                child:
-                    _NavigationError(message: _error!, onRetry: _prepareRoute))
+                child: _NavigationError(
+              message: _error!,
+              onRetry: _prepareRoute,
+              recoveryLabel: _locationError?.recoveryLabel,
+              onRecovery: _locationError?.recoveryLabel == null
+                  ? null
+                  : _openLocationRecovery,
+            ))
           else if (route != null)
             Align(
               alignment: Alignment.bottomCenter,
@@ -657,9 +684,17 @@ class _NavigationPanel extends StatelessWidget {
 }
 
 class _NavigationError extends StatelessWidget {
-  const _NavigationError({required this.message, required this.onRetry});
+  const _NavigationError({
+    required this.message,
+    required this.onRetry,
+    this.recoveryLabel,
+    this.onRecovery,
+  });
+
   final String message;
   final VoidCallback onRetry;
+  final String? recoveryLabel;
+  final Future<void> Function()? onRecovery;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -677,6 +712,14 @@ class _NavigationError extends StatelessWidget {
               const SizedBox(height: 12),
               FilledButton(
                   onPressed: onRetry, child: const Text('إعادة المحاولة')),
+              if (recoveryLabel != null && onRecovery != null) ...[
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => onRecovery!(),
+                  icon: const Icon(Icons.settings_outlined),
+                  label: Text(recoveryLabel!),
+                ),
+              ],
             ],
           ),
         ),

@@ -168,8 +168,7 @@ class _SoufMapPageState extends State<SoufMapPage> {
     } on LocationException catch (error) {
       if (!mounted) return;
       setState(() => _isLocating = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error.message)));
+      _showLocationRecovery(error);
     } catch (_) {
       if (!mounted) return;
       setState(() => _isLocating = false);
@@ -185,6 +184,34 @@ class _SoufMapPageState extends State<SoufMapPage> {
       return;
     }
     await _findMyLocation(enableNearby: true);
+  }
+
+  void _showLocationRecovery(LocationException error) {
+    final recoveryLabel = error.recoveryLabel;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(error.message),
+        duration: const Duration(seconds: 8),
+        action: recoveryLabel == null
+            ? null
+            : SnackBarAction(
+                label: recoveryLabel,
+                onPressed: () {
+                  switch (error.issue) {
+                    case LocationIssue.serviceDisabled:
+                      _locationService.openDeviceLocationSettings();
+                      break;
+                    case LocationIssue.permissionDeniedForever:
+                      _locationService.openApplicationSettings();
+                      break;
+                    default:
+                      break;
+                  }
+                },
+              ),
+      ),
+    );
   }
 
   void _openDetails(Place place) => Navigator.of(context).push(
