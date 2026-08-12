@@ -17,7 +17,7 @@ class _TourGuidePageState extends State<TourGuidePage> {
   final _messages = <_ChatMessage>[
     const _ChatMessage(
       text:
-          'مرحباً، أنا دليلك الذكي في سوف 360. أساعدك في إعداد زيارة مميزة لوادي سوف عبر اقتراح مسارات، معلومات ثقافية، ونصائح عملية.',
+          'مرحباً، أنا المساعد الذكي في سوف 360. أساعدك في إعداد زيارة مميزة لوادي سوف عبر اقتراح مسارات ومعلومات ثقافية ونصائح عملية من المعالم المنشورة.',
       isUser: false,
     ),
   ];
@@ -71,7 +71,7 @@ class _TourGuidePageState extends State<TourGuidePage> {
   Widget build(BuildContext context) {
     final isAvailable = widget.repository != null;
     return Scaffold(
-      appBar: AppBar(title: const Text('الدليل الذكي')),
+      appBar: AppBar(title: const Text('المساعد الذكي')),
       body: Column(
         children: [
           Padding(
@@ -256,7 +256,7 @@ class _GuideHero extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('رفيقك الذكي في وادي سوف',
+                    Text('مساعدك الذكي في وادي سوف',
                         style: Theme.of(context)
                             .textTheme
                             .titleMedium
@@ -264,8 +264,8 @@ class _GuideHero extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       isAvailable
-                          ? 'اسأل عن المعالم وتجارب الزيارة والنصائح العملية.'
-                          : 'يتطلب الدليل اتصالاً آمناً بخدمة Souf360.',
+                          ? 'اسأل عن المعالم وبرامج الزيارة والنصائح العملية.'
+                          : 'يتطلب المساعد اتصالاً آمناً بخدمة Souf360.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -303,7 +303,7 @@ class _GuideUnavailableNotice extends StatelessWidget {
         child: const Padding(
           padding: EdgeInsets.all(14),
           child: Text(
-            'الدليل الذكي غير متاح حالياً. يمكنك متابعة الاستكشاف من الخريطة وبوصلة سوف، ثم إعادة المحاولة عند توفر الاتصال الآمن.',
+            'المساعد الذكي غير متاح حالياً. يمكنك متابعة الاستكشاف من الخريطة وبوصلة سوف، ثم إعادة المحاولة عند توفر الاتصال الآمن.',
           ),
         ),
       );
@@ -325,7 +325,7 @@ class _TypingIndicator extends StatelessWidget {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2)),
               SizedBox(width: 10),
-              Text('يجري الدليل إعداد الإجابة…'),
+              Text('يجري المساعد إعداد الإجابة…'),
             ],
           ),
         ),

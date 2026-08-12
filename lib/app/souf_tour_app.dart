@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../core/storage/favorites_controller.dart';
+import '../features/community/domain/repositories/community_repository.dart';
+import '../features/community/presentation/community_page.dart';
 import '../core/theme/app_theme.dart';
 import '../features/favorites/presentation/favorites_page.dart';
 import '../features/home/presentation/home_page.dart';
@@ -16,6 +18,7 @@ class SoufTourApp extends StatefulWidget {
   const SoufTourApp({
     super.key,
     required this.placeRepository,
+    required this.communityRepository,
     required this.tourGuideRepository,
     this.routingService,
     required this.favoritesController,
@@ -23,6 +26,7 @@ class SoufTourApp extends StatefulWidget {
   });
 
   final PlaceRepository? placeRepository;
+  final CommunityRepository? communityRepository;
   final TourGuideRepository? tourGuideRepository;
   final RoutingService? routingService;
   final FavoritesController favoritesController;
@@ -69,6 +73,7 @@ class _SoufTourAppState extends State<SoufTourApp> {
         favorites: widget.favoritesController,
         routingService: widget.routingService,
       ),
+      CommunityPage(repository: widget.communityRepository),
     ];
 
     return MaterialApp(
@@ -130,6 +135,11 @@ class _SoufTourAppState extends State<SoufTourApp> {
                     icon: Icon(Icons.favorite_border),
                     selectedIcon: Icon(Icons.favorite),
                     label: 'المفضلة',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.forum_outlined),
+                    selectedIcon: Icon(Icons.forum),
+                    label: 'المجتمع',
                   ),
                 ],
               ),

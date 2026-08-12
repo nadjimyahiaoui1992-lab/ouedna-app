@@ -12,6 +12,7 @@ void main() {
     await tester.pumpWidget(
       SoufTourApp(
         placeRepository: null,
+        communityRepository: null,
         tourGuideRepository: null,
         favoritesController: favorites,
         isBackendConfigured: false,

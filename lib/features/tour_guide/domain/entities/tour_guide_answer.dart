@@ -13,7 +13,7 @@ class TourGuideAnswer {
     final rawSuggestions = json['suggestions'];
     return TourGuideAnswer(
       answer: (json['answer'] as String?)?.trim() ??
-          'Je ne peux pas répondre à cette question pour le moment.',
+          'لا أستطيع الإجابة عن هذا السؤال حالياً. حاول مرة أخرى بعد قليل.',
       suggestions: rawSuggestions is List
           ? rawSuggestions
               .map((item) => item.toString().trim())

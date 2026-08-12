@@ -17,7 +17,7 @@ class SupabaseTourGuideRepository implements TourGuideRepository {
     final normalizedQuestion = question.trim();
     if (normalizedQuestion.isEmpty || normalizedQuestion.length > 500) {
       throw const AppException(
-        'Votre question doit comporter entre 1 et 500 caractères.',
+        'يجب أن يتراوح السؤال بين حرف واحد و500 حرف.',
       );
     }
 
@@ -32,19 +32,19 @@ class SupabaseTourGuideRepository implements TourGuideRepository {
 
       final data = response.data;
       if (data is! Map<String, dynamic>) {
-        throw const AppException('Réponse du guide invalide.');
+        throw const AppException('استجابة المساعد الذكي غير صالحة.');
       }
       return TourGuideAnswer.fromJson(data);
     } on FunctionException catch (error) {
       throw AppException(
-        'Le guide est temporairement indisponible. Réessayez dans un instant.',
+        'المساعد الذكي غير متاح مؤقتاً. أعد المحاولة بعد قليل.',
         cause: error.status,
       );
     } on AppException {
       rethrow;
     } catch (error) {
       throw AppException(
-        'Une erreur est survenue lors de la consultation du guide.',
+        'حدث خطأ أثناء الاتصال بالمساعد الذكي.',
         cause: error.runtimeType,
       );
     }

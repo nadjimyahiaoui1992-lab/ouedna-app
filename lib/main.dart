@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/souf_tour_app.dart';
 import 'core/config/app_config.dart';
 import 'core/storage/favorites_controller.dart';
+import 'features/community/data/repositories/supabase_community_repository.dart';
+import 'features/community/domain/repositories/community_repository.dart';
 import 'features/places/data/repositories/cached_place_repository.dart';
 import 'features/places/data/repositories/supabase_place_repository.dart';
 import 'features/places/domain/repositories/place_repository.dart';
@@ -19,6 +21,7 @@ Future<void> main() async {
   final preferences = await SharedPreferences.getInstance();
   final favoritesController = FavoritesController(preferences);
   PlaceRepository? placeRepository;
+  CommunityRepository? communityRepository;
   TourGuideRepository? tourGuideRepository;
   final RoutingService routingService = OsrmRoutingService();
 
@@ -34,6 +37,7 @@ Future<void> main() async {
       remote: SupabasePlaceRepository(client),
       preferences: preferences,
     );
+    communityRepository = SupabaseCommunityRepository(client);
 
     try {
       if (client.auth.currentSession == null) {
@@ -52,6 +56,7 @@ Future<void> main() async {
   runApp(
     SoufTourApp(
       placeRepository: placeRepository,
+      communityRepository: communityRepository,
       tourGuideRepository: tourGuideRepository,
       routingService: routingService,
       favoritesController: favoritesController,

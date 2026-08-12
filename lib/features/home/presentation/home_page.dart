@@ -597,7 +597,7 @@ class _HomeActionRail extends StatelessWidget {
           Expanded(
               child: _HomeAction(
                   icon: Icons.auto_awesome_outlined,
-                  label: 'الدليل',
+                  label: 'مساعد ذكي',
                   onTap: onGuide)),
           const SizedBox(width: 8),
           Expanded(
