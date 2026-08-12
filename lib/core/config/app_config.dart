@@ -1,6 +1,4 @@
 abstract final class AppConfig {
-  static const siteUrl = 'https://souf360.vercel.app';
-
   // These values are the public, browser-delivered settings used by Souf360.
   // They provide read-only access constrained by the backend's RLS policies.
   static const _defaultSupabaseUrl = 'https://cwbenhuiextfoiyfboxo.supabase.co';
