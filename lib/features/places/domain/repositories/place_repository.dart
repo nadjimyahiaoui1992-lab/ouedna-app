@@ -1,4 +1,6 @@
 import '../entities/place.dart';
+import 'dart:typed_data';
+
 import '../entities/place_gallery_image.dart';
 import '../entities/place_page.dart';
 
