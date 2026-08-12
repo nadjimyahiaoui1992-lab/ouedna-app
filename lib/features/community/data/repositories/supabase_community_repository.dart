@@ -101,12 +101,12 @@ class SupabaseCommunityRepository implements CommunityRepository {
   }
 
   String _imageExtension(String fileName) {
-    final extension =
-        fileName.contains('.') ? fileName.split('.').last.toLowerCase() : 'jpg';
-    if (!{'jpg', 'jpeg', 'png', 'webp'}.contains(extension)) {
-      throw const AppException('استخدم صور JPG أو PNG أو WebP فقط.');
-    }
-    return extension;
+    final clean = fileName.trim().toLowerCase();
+    if (!clean.contains('.')) return 'jpg';
+    final extension = clean.split('.').last;
+    if ({'png'}.contains(extension)) return 'png';
+    if ({'webp'}.contains(extension)) return 'webp';
+    return 'jpg';
   }
 
   String _contentType(String extension) {
