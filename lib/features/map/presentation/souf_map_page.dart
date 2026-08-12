@@ -46,6 +46,8 @@ class _SoufMapPageState extends State<SoufMapPage> {
   String? _error;
   bool _loading = true;
   bool _nearbyOnly = false;
+  bool _satelliteMode = false;
+  bool _isLocating = false;
 
   @override
   void initState() {
@@ -147,20 +149,30 @@ class _SoufMapPageState extends State<SoufMapPage> {
   }
 
   Future<void> _findMyLocation({bool enableNearby = false}) async {
+    if (_isLocating) return;
+    setState(() => _isLocating = true);
     try {
       final position = await _locationService.getCurrentPosition();
       if (!mounted) return;
       setState(() {
         _position = position;
+        _isLocating = false;
         if (enableNearby) _nearbyOnly = true;
       });
       _mapController.move(LatLng(position.latitude, position.longitude), 14);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content:
+                Text('تم تحديد موقعك. يمكنك الآن استكشاف الأماكن القريبة.')),
+      );
     } on LocationException catch (error) {
       if (!mounted) return;
+      setState(() => _isLocating = false);
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
       if (!mounted) return;
+      setState(() => _isLocating = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تعذر تحديد موقعك الآن.')),
       );
@@ -205,8 +217,11 @@ class _SoufMapPageState extends State<SoufMapPage> {
             options: const MapOptions(initialCenter: _elOued, initialZoom: 12),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: _satelliteMode
+                    ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+                    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.souf360.app',
+                maxNativeZoom: _satelliteMode ? 19 : 19,
               ),
               MarkerClusterLayerWidget(
                 options: MarkerClusterLayerOptions(
@@ -223,17 +238,36 @@ class _SoufMapPageState extends State<SoufMapPage> {
             top: 12,
             right: 14,
             left: 14,
-            child: _MapHeader(
-              controller: _searchController,
-              onChanged: (value) => setState(() => _query = value),
-              onClear: () {
-                _searchController.clear();
-                setState(() => _query = '');
-              },
+            child: Row(
+              children: [
+                Expanded(
+                  child: _MapHeader(
+                    controller: _searchController,
+                    onChanged: (value) => setState(() => _query = value),
+                    onClear: () {
+                      _searchController.clear();
+                      setState(() => _query = '');
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: _satelliteMode
+                      ? 'الخريطة العادية'
+                      : 'عرض الأقمار الصناعية',
+                  child: IconButton.filled(
+                    onPressed: () =>
+                        setState(() => _satelliteMode = !_satelliteMode),
+                    icon: Icon(_satelliteMode
+                        ? Icons.map_outlined
+                        : Icons.satellite_alt_outlined),
+                  ),
+                ),
+              ],
             ),
           ),
           Positioned(
-            top: 76,
+            top: 78,
             right: 14,
             left: 14,
             child: _FilterStrip(
@@ -277,8 +311,13 @@ class _SoufMapPageState extends State<SoufMapPage> {
                 FloatingActionButton.small(
                   heroTag: 'my-location',
                   tooltip: 'موقعي الحالي',
-                  onPressed: _findMyLocation,
-                  child: const Icon(Icons.my_location_outlined),
+                  onPressed: _isLocating ? null : _findMyLocation,
+                  child: _isLocating
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.my_location_outlined),
                 ),
                 const SizedBox(height: 10),
                 FloatingActionButton.small(
@@ -294,6 +333,25 @@ class _SoufMapPageState extends State<SoufMapPage> {
             end: 16,
             bottom: 24,
             child: _MapCount(count: places.length),
+          ),
+          Positioned(
+            right: 14,
+            bottom: 5,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface.withOpacity(.88),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                child: Text(
+                  _satelliteMode
+                      ? 'صور الأقمار الصناعية © Esri'
+                      : '© OpenStreetMap',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
+            ),
           ),
         ],
       ),

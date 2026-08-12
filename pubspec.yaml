@@ -33,3 +33,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/branding/souf360_el_oued_welcome.jpg

@@ -124,47 +124,26 @@ class _HomePageState extends State<HomePage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('سوف 360',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.w900)),
-                            const SizedBox(height: 2),
-                            Text('اكتشف وادي سوف من كل زاوية',
-                                style: Theme.of(context).textTheme.bodySmall),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'الدليل الذكي',
-                        onPressed: _openGuide,
-                        icon: const Icon(Icons.auto_awesome_outlined),
-                      ),
-                      IconButton(
-                        tooltip: 'بوصلة سوف',
-                        onPressed: _openCompass,
-                        icon: const Icon(Icons.explore_outlined),
-                      ),
-                      IconButton(
-                        tooltip: 'الخريطة',
-                        onPressed: widget.onMap,
-                        icon: const Icon(Icons.map_outlined),
-                      ),
-                      IconButton(
-                        tooltip: 'مساعدة عاجلة',
-                        onPressed: _openEmergency,
-                        color: Theme.of(context).colorScheme.error,
-                        icon: const Icon(Icons.sos_outlined),
-                      ),
-                    ],
+                  Text(
+                    'سوف 360',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.w900),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 3),
+                  Text(
+                    'اكتشف وادي سوف من كل زاوية',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  _HomeActionRail(
+                    onGuide: _openGuide,
+                    onCompass: _openCompass,
+                    onMap: widget.onMap,
+                    onEmergency: _openEmergency,
+                  ),
+                  const SizedBox(height: 18),
                   _WelcomePanel(
                     onExplore: widget.onExplore,
                     onMap: widget.onMap,
@@ -263,57 +242,165 @@ class _WelcomePanel extends StatelessWidget {
   final VoidCallback onMap;
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+  Widget build(BuildContext context) => ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: SizedBox(
+          height: 174,
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFD9A441),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.wb_sunny_outlined,
-                    color: Color(0xFF102D28)),
+              Image.asset(
+                'assets/branding/souf360_el_oued_welcome.jpg',
+                fit: BoxFit.cover,
+                alignment: const Alignment(0, .35),
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xDC102D28), Color(0x65102D28)],
+                    begin: Alignment.centerRight,
+                    end: Alignment.centerLeft,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'ماذا تريد أن تكتشف؟',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w900),
+                    const Text(
+                      'رحلتك تبدأ من هنا',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 23,
+                          fontWeight: FontWeight.w900),
                     ),
-                    const SizedBox(height: 3),
-                    const Text('معالم الوادي وتجارب الزوار المنشورة'),
+                    const SizedBox(height: 5),
+                    const Text(
+                      'معالم الوادي وتجارب الزوار المنشورة',
+                      style: TextStyle(
+                          color: Color(0xFFF4EBDD),
+                          fontWeight: FontWeight.w600),
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFFE5B65A),
+                            foregroundColor: const Color(0xFF102D28),
+                          ),
+                          onPressed: onExplore,
+                          icon: const Icon(Icons.explore_outlined),
+                          label: const Text('استكشف'),
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white),
+                          onPressed: onMap,
+                          icon: const Icon(Icons.map_outlined),
+                          label: const Text('الخريطة'),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-              ),
-              IconButton.filledTonal(
-                tooltip: 'استكشف الخريطة',
-                onPressed: onMap,
-                icon: const Icon(Icons.map_outlined),
-              ),
-              const SizedBox(width: 4),
-              IconButton.filled(
-                tooltip: 'استكشف المعالم',
-                onPressed: onExplore,
-                icon: const Icon(Icons.arrow_back_rounded),
               ),
             ],
           ),
         ),
       );
+}
+
+class _HomeActionRail extends StatelessWidget {
+  const _HomeActionRail({
+    required this.onGuide,
+    required this.onCompass,
+    required this.onMap,
+    required this.onEmergency,
+  });
+
+  final VoidCallback onGuide;
+  final VoidCallback onCompass;
+  final VoidCallback onMap;
+  final VoidCallback onEmergency;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          Expanded(
+              child: _HomeAction(
+                  icon: Icons.auto_awesome_outlined,
+                  label: 'الدليل',
+                  onTap: onGuide)),
+          const SizedBox(width: 8),
+          Expanded(
+              child: _HomeAction(
+                  icon: Icons.explore_outlined,
+                  label: 'بوصلة',
+                  onTap: onCompass)),
+          const SizedBox(width: 8),
+          Expanded(
+              child: _HomeAction(
+                  icon: Icons.map_outlined, label: 'الخريطة', onTap: onMap)),
+          const SizedBox(width: 8),
+          Expanded(
+              child: _HomeAction(
+                  icon: Icons.sos_outlined,
+                  label: 'نجدة',
+                  isEmergency: true,
+                  onTap: onEmergency)),
+        ],
+      );
+}
+
+class _HomeAction extends StatelessWidget {
+  const _HomeAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isEmergency = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isEmergency;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isEmergency
+        ? Theme.of(context).colorScheme.error
+        : Theme.of(context).colorScheme.primary;
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: color, size: 23),
+                const SizedBox(height: 5),
+                FittedBox(
+                  child: Text(label,
+                      style:
+                          TextStyle(color: color, fontWeight: FontWeight.w800)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _SectionHeader extends StatelessWidget {

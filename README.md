@@ -38,7 +38,8 @@ Each place has a premium detail experience with a gallery Supabase, a native min
 | Offline mode | Published places are cached in `SharedPreferences`. If Souf360 is unavailable, cached results remain usable and the app explicitly shows that the data may not be current. |
 | Favourites | Stored locally on the device; no registration, password, or backend write is needed. |
 | Dark mode | A real dark Material 3 palette is available from the app shell. |
-| Map | Native OpenStreetMap tiles, search, dynamic categories, nearby places on demand, image markers, clustering, place cards, a recenter control, and optional current location. |
+| Welcome | A bundled El Oued welcome experience introduces the brand and visitor value before the four-tab application shell. |
+| Map | Native OpenStreetMap tiles, an optional satellite imagery mode with visible attribution, search, dynamic categories, nearby places on demand, image markers, clustering, place cards, a recenter control, and optional current location. |
 | Navigation | In-app route panel with real provider geometry, distance, estimated duration, movement modes, voluntary GPS follow, off-route recalculation, and arrival feedback. |
 | Guide IA | Arabic conversational interface backed by the authenticated `tour-guide` Edge Function. |
 | Souf Compass | A local, offline-capable itinerary composer that ranks only real published places according to visitor-selected categories, available time and optional on-device location. It never fabricates a route or stop. |
@@ -59,6 +60,7 @@ lib/
 │   ├── theme/                            # Souf 360 Material 3 palettes
 │   └── widgets/                          # Cross-screen offline notice
 └── features/
+    ├── welcome/                          # Immersive El Oued first-launch experience
     ├── home/                             # Dynamic home catalogue and visitor actions
     ├── compass/                          # Offline-capable personalised itinerary composer
     ├── favorites/                        # Device-local saved places

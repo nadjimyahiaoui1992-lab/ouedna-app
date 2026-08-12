@@ -29,6 +29,11 @@ class _TourGuidePageState extends State<TourGuidePage> {
     super.dispose();
   }
 
+  void _askPreset(String question) {
+    _controller.text = question;
+    _send();
+  }
+
   Future<void> _send() async {
     final repository = widget.repository;
     final question = _controller.text.trim();
@@ -65,33 +70,42 @@ class _TourGuidePageState extends State<TourGuidePage> {
   @override
   Widget build(BuildContext context) {
     final isAvailable = widget.repository != null;
-    return SafeArea(
-      child: Column(
+    return Scaffold(
+      appBar: AppBar(title: const Text('الدليل الذكي')),
+      body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'الدليل الذكي',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'مساعد محادثة يعتمد على المعلومات المنشورة. تحقّق دائماً من أوقات وشروط الزيارة لدى المصادر المحلية.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                if (!isAvailable) ...[
-                  const SizedBox(height: 12),
-                  const _GuideUnavailableNotice(),
-                ],
-              ],
-            ),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
+            child: _GuideHero(isAvailable: isAvailable),
           ),
+          if (isAvailable)
+            SizedBox(
+              height: 42,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: [
+                  _PromptChip(
+                      label: 'زيارة نصف يوم',
+                      onTap: () =>
+                          _askPreset('ماذا تقترح لزيارة نصف يوم في وادي سوف؟')),
+                  _PromptChip(
+                      label: 'معالم تراثية',
+                      onTap: () => _askPreset(
+                          'ما أبرز المعالم التراثية المنشورة في وادي سوف؟')),
+                  _PromptChip(
+                      label: 'نصائح الزيارة',
+                      onTap: () => _askPreset(
+                          'ما النصائح العملية لزيارة وادي سوف اليوم؟')),
+                ],
+              ),
+            )
+          else
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 2, 20, 8),
+              child: _GuideUnavailableNotice(),
+            ),
+          const SizedBox(height: 8),
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
@@ -118,7 +132,8 @@ class _TourGuidePageState extends State<TourGuidePage> {
                       textCapitalization: TextCapitalization.sentences,
                       onSubmitted: (_) => _send(),
                       decoration: const InputDecoration(
-                        hintText: 'مثال: ماذا تقترح لزيارة نصف يوم؟',
+                        hintText: 'اسأل عن مكان، تجربة أو برنامج زيارة…',
+                        prefixIcon: Icon(Icons.auto_awesome_outlined),
                       ),
                     ),
                   ),
@@ -215,6 +230,70 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
+class _GuideHero extends StatelessWidget {
+  const _GuideHero({required this.isAvailable});
+
+  final bool isAvailable;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 24,
+                backgroundColor: Color(0xFF193F38),
+                child:
+                    Icon(Icons.auto_awesome_rounded, color: Color(0xFFE5B65A)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('رفيقك الذكي في وادي سوف',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 4),
+                    Text(
+                      isAvailable
+                          ? 'اسأل عن المعالم وتجارب الزيارة والنصائح العملية.'
+                          : 'يتطلب الدليل اتصالاً آمناً بخدمة Souf360.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+class _PromptChip extends StatelessWidget {
+  const _PromptChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsetsDirectional.only(end: 8),
+        child: ActionChip(
+          avatar: const Icon(Icons.chat_bubble_outline, size: 16),
+          label: Text(label),
+          onPressed: onTap,
+        ),
+      );
+}
+
 class _GuideUnavailableNotice extends StatelessWidget {
   const _GuideUnavailableNotice();
 
@@ -224,7 +303,7 @@ class _GuideUnavailableNotice extends StatelessWidget {
         child: const Padding(
           padding: EdgeInsets.all(14),
           child: Text(
-            'الدليل الذكي غير متاح مؤقتاً. تحقق من إعدادات الاتصال وحاول مرة أخرى لاحقاً.',
+            'الدليل الذكي غير متاح حالياً. يمكنك متابعة الاستكشاف من الخريطة وبوصلة سوف، ثم إعادة المحاولة عند توفر الاتصال الآمن.',
           ),
         ),
       );

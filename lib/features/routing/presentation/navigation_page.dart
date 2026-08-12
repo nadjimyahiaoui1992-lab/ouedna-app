@@ -40,6 +40,7 @@ class _NavigationPageState extends State<NavigationPage> {
   bool _loading = true;
   bool _navigating = false;
   bool _rerouting = false;
+  bool _satelliteMode = false;
   bool _arrived = false;
   DateTime? _lastRerouteAt;
 
@@ -330,8 +331,11 @@ class _NavigationPageState extends State<NavigationPage> {
             options: MapOptions(initialCenter: destination, initialZoom: 13),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: _satelliteMode
+                    ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+                    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.souf360.app',
+                maxNativeZoom: 19,
               ),
               if (route != null)
                 PolylineLayer(
@@ -396,6 +400,40 @@ class _NavigationPageState extends State<NavigationPage> {
                     icon: const Icon(Icons.my_location_outlined),
                   ),
                 ],
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            start: 14,
+            top: 94,
+            child: Tooltip(
+              message:
+                  _satelliteMode ? 'الخريطة العادية' : 'عرض الأقمار الصناعية',
+              child: IconButton.filledTonal(
+                onPressed: () =>
+                    setState(() => _satelliteMode = !_satelliteMode),
+                icon: Icon(_satelliteMode
+                    ? Icons.map_outlined
+                    : Icons.satellite_alt_outlined),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 14,
+            bottom: 8,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface.withOpacity(.88),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                child: Text(
+                  _satelliteMode
+                      ? 'صور الأقمار الصناعية © Esri'
+                      : '© OpenStreetMap',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
               ),
             ),
           ),

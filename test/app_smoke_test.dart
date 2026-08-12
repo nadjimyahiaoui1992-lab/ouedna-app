@@ -19,6 +19,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('دخول كزائر'), findsOneWidget);
+    await tester.tap(find.text('دخول كزائر'));
+    await tester.pumpAndSettle();
+
     expect(find.textContaining('لا يوجد اتصال بالإنترنت'), findsOneWidget);
     expect(find.text('إعادة المحاولة'), findsOneWidget);
   });
