@@ -366,6 +366,12 @@ class _CategoryCircle extends StatelessWidget {
     if (label.contains('مطعم') || label.contains('مقهى')) {
       return Icons.restaurant_outlined;
     }
+    if (label.contains('سوق') || label.contains('أسواق')) {
+      return Icons.storefront_outlined;
+    }
+    if (label.contains('متجر') || label.contains('محلات')) {
+      return Icons.shopping_bag_outlined;
+    }
     if (label.contains('طبيعي') || label.contains('واحة')) {
       return Icons.park_outlined;
     }
@@ -382,6 +388,12 @@ class _CategoryCircle extends StatelessWidget {
     }
     if (label.contains('مطعم') || label.contains('مقهى')) {
       return const Color(0xFFC47C36);
+    }
+    if (label.contains('سوق') || label.contains('أسواق')) {
+      return const Color(0xFFC08A2E);
+    }
+    if (label.contains('متجر') || label.contains('محلات')) {
+      return const Color(0xFF2E8B9E);
     }
     if (label.contains('طبيعي') || label.contains('واحة')) {
       return const Color(0xFF478B56);
