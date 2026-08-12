@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -48,17 +49,31 @@ class _SoufMapPageState extends State<SoufMapPage> {
   bool _nearbyOnly = false;
   bool _satelliteMode = false;
   bool _isLocating = false;
+  StreamSubscription<void>? _catalogueSubscription;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _subscribeToCatalogue();
   }
 
   @override
   void dispose() {
+    _catalogueSubscription?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _subscribeToCatalogue() {
+    final repository = widget.repository;
+    if (repository == null) return;
+    _catalogueSubscription = repository.watchPublishedPlaces().listen(
+      (_) => _load(),
+      onError: (_) {
+        // The last successfully loaded catalogue remains visible offline.
+      },
+    );
   }
 
   Future<void> _load() async {
@@ -231,6 +246,9 @@ class _SoufMapPageState extends State<SoufMapPage> {
     if (_error != null) return _MapError(message: _error!, onRetry: _load);
 
     final places = _visiblePlaces;
+    final photoPlaces = places
+        .where((place) => place.imageUrl?.trim().isNotEmpty == true)
+        .toList(growable: false);
     final markers = [
       ...places.map(_placeMarker),
       if (_position != null) _myLocationMarker(),
@@ -330,9 +348,20 @@ class _SoufMapPageState extends State<SoufMapPage> {
                 }),
               ),
             ),
+          if (photoPlaces.isNotEmpty)
+            Positioned(
+              right: 14,
+              left: 14,
+              bottom: 18,
+              child: _LandmarkPhotoRail(
+                places: photoPlaces,
+                distanceLabel: _distanceLabel,
+                onSelected: _showPlaceSheet,
+              ),
+            ),
           PositionedDirectional(
             start: 16,
-            bottom: 22,
+            bottom: photoPlaces.isNotEmpty ? 178 : 22,
             child: Column(
               children: [
                 FloatingActionButton.small(
@@ -358,12 +387,12 @@ class _SoufMapPageState extends State<SoufMapPage> {
           ),
           PositionedDirectional(
             end: 16,
-            bottom: 24,
+            bottom: photoPlaces.isNotEmpty ? 184 : 24,
             child: _MapCount(count: places.length),
           ),
           Positioned(
-            right: 14,
-            bottom: 5,
+            left: 14,
+            bottom: photoPlaces.isNotEmpty ? 178 : 5,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface.withOpacity(.88),
@@ -703,6 +732,155 @@ class _MapCount extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           child: Text('$count مكان',
               style: const TextStyle(fontWeight: FontWeight.w800)),
+        ),
+      );
+}
+
+class _LandmarkPhotoRail extends StatelessWidget {
+  const _LandmarkPhotoRail({
+    required this.places,
+    required this.distanceLabel,
+    required this.onSelected,
+  });
+
+  final List<Place> places;
+  final String? Function(Place place) distanceLabel;
+  final ValueChanged<Place> onSelected;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: 148,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsetsDirectional.only(start: 2, end: 2),
+          itemCount: places.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (context, index) => _LandmarkPhotoCard(
+            place: places[index],
+            distanceLabel: distanceLabel(places[index]),
+            onTap: () => onSelected(places[index]),
+          ),
+        ),
+      );
+}
+
+class _LandmarkPhotoCard extends StatelessWidget {
+  const _LandmarkPhotoCard({
+    required this.place,
+    required this.distanceLabel,
+    required this.onTap,
+  });
+
+  final Place place;
+  final String? distanceLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        label: 'فتح ${place.name} على الخريطة',
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Ink(
+              width: 224,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: Colors.white.withOpacity(.28)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black45,
+                    blurRadius: 18,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: place.imageUrl!,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => ColoredBox(
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    ),
+                    errorWidget: (_, __, ___) => ColoredBox(
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: const Center(
+                        child: Icon(Icons.image_not_supported_outlined),
+                      ),
+                    ),
+                  ),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Color(0xD9102D28)],
+                        stops: [.28, 1],
+                      ),
+                    ),
+                  ),
+                  PositionedDirectional(
+                    start: 12,
+                    end: 12,
+                    bottom: 12,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          place.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            const Icon(Icons.place_outlined,
+                                color: Color(0xFFE5B65A), size: 16),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                distanceLabel == null
+                                    ? place.category
+                                    : '${place.category} · $distanceLabel',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFFF5EBDD),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       );
 }
