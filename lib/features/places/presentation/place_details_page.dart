@@ -45,6 +45,26 @@ class _PlaceDetailsPageState extends State<PlaceDetailsPage> {
     final place = widget.place;
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
+      bottomNavigationBar: place.hasCoordinates
+          ? SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
+                child: FilledButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => NavigationPage(
+                        place: place,
+                        routingService: widget.routingService,
+                      ),
+                    ),
+                  ),
+                  icon: const Icon(Icons.navigation_rounded),
+                  label: const Text('ابدأ الملاحة إلى المكان'),
+                ),
+              ),
+            )
+          : null,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -77,7 +97,7 @@ class _PlaceDetailsPageState extends State<PlaceDetailsPage> {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 38),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 112),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

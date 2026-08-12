@@ -38,6 +38,7 @@ abstract final class AppTheme {
     );
     return ThemeData(
       useMaterial3: true,
+      fontFamily: 'Cairo',
       colorScheme: scheme,
       scaffoldBackgroundColor: surface,
       appBarTheme: AppBarTheme(
@@ -73,15 +74,41 @@ abstract final class AppTheme {
           borderSide: const BorderSide(color: gold, width: 1.5),
         ),
       ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: deepGreen,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
       navigationBarTheme: NavigationBarThemeData(
         height: 78,
-        backgroundColor:
-            brightness == Brightness.light ? Colors.white : darkGreen,
+        backgroundColor: brightness == Brightness.light
+            ? const Color(0xFFFFFCF6)
+            : darkGreen,
         indicatorColor: brightness == Brightness.light
-            ? const Color(0xFFD7F0E6)
-            : const Color(0xFF285A4D),
-        labelTextStyle: WidgetStatePropertyAll(
-          TextStyle(fontWeight: FontWeight.w700, color: onSurface),
+            ? const Color(0x33D9A441)
+            : const Color(0x3349A98B),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? gold
+                : onSurface.withOpacity(.72),
+          ),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontWeight: FontWeight.w800,
+            color: states.contains(WidgetState.selected)
+                ? brightness == Brightness.dark
+                    ? softGold
+                    : deepGreen
+                : onSurface.withOpacity(.76),
+          ),
         ),
       ),
       chipTheme: ChipThemeData(

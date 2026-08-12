@@ -85,7 +85,10 @@ class _SoufTourAppState extends State<SoufTourApp> {
         child: child ?? const SizedBox.shrink(),
       ),
       home: _showWelcome
-          ? WelcomePage(onContinue: () => setState(() => _showWelcome = false))
+          ? WelcomePage(
+              repository: widget.placeRepository,
+              onContinue: () => setState(() => _showWelcome = false),
+            )
           : Scaffold(
               body: Stack(
                 children: [

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/storage/favorites_controller.dart';
@@ -120,6 +121,12 @@ class _HomePageState extends State<HomePage> {
                           .isUsingCachedData;
               final featured = [...data.places]
                 ..sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
+              final photoPlaces = featured
+                  .where((place) => place.imageUrl?.trim().isNotEmpty == true)
+                  .toList(growable: false);
+              final displayFeatured =
+                  photoPlaces.isEmpty ? featured : photoPlaces;
+              final heroPlace = photoPlaces.isEmpty ? null : photoPlaces.first;
               return ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
@@ -145,6 +152,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 18),
                   _WelcomePanel(
+                    heroPlace: heroPlace,
                     onExplore: widget.onExplore,
                     onMap: widget.onMap,
                   ),
@@ -173,16 +181,10 @@ class _HomePageState extends State<HomePage> {
                       onAction: widget.onExplore),
                   const SizedBox(height: 12),
                   SizedBox(
-                    height: 42,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: data.categories.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) => ActionChip(
-                        avatar: const Icon(Icons.category_outlined, size: 17),
-                        label: Text(data.categories[index]),
-                        onPressed: widget.onExplore,
-                      ),
+                    height: 94,
+                    child: _CategoryRail(
+                      categories: data.categories,
+                      onExplore: widget.onExplore,
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -195,13 +197,11 @@ class _HomePageState extends State<HomePage> {
                     height: 236,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      itemCount: featured.length,
+                      itemCount: displayFeatured.length,
                       separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemBuilder: (context, index) => PlaceCard(
-                        place: featured[index],
-                        favorites: widget.favorites,
-                        compact: true,
-                        onTap: () => _openPlace(featured[index]),
+                      itemBuilder: (context, index) => _FeaturedPlaceCard(
+                        place: displayFeatured[index],
+                        onTap: () => _openPlace(displayFeatured[index]),
                       ),
                     ),
                   ),
@@ -236,8 +236,13 @@ class _HomeData {
 }
 
 class _WelcomePanel extends StatelessWidget {
-  const _WelcomePanel({required this.onExplore, required this.onMap});
+  const _WelcomePanel({
+    required this.heroPlace,
+    required this.onExplore,
+    required this.onMap,
+  });
 
+  final Place? heroPlace;
   final VoidCallback onExplore;
   final VoidCallback onMap;
 
@@ -249,11 +254,20 @@ class _WelcomePanel extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.asset(
-                'assets/branding/souf360_el_oued_welcome.jpg',
-                fit: BoxFit.cover,
-                alignment: const Alignment(0, .35),
-              ),
+              if (heroPlace?.imageUrl?.trim().isNotEmpty == true)
+                CachedNetworkImage(
+                  imageUrl: heroPlace!.imageUrl!,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  placeholder: (_, __) => const ColoredBox(
+                    color: Color(0xFF193F38),
+                  ),
+                  errorWidget: (_, __, ___) => const ColoredBox(
+                    color: Color(0xFF193F38),
+                  ),
+                )
+              else
+                const ColoredBox(color: Color(0xFF193F38)),
               const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -268,19 +282,27 @@ class _WelcomePanel extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'رحلتك تبدأ من هنا',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 23,
-                          fontWeight: FontWeight.w900),
+                    Text(
+                      heroPlace?.name ?? 'رحلتك تبدأ من هنا',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 23,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     const SizedBox(height: 5),
-                    const Text(
-                      'معالم الوادي وتجارب الزوار المنشورة',
-                      style: TextStyle(
-                          color: Color(0xFFF4EBDD),
-                          fontWeight: FontWeight.w600),
+                    Text(
+                      heroPlace == null
+                          ? 'معالم الوادي وتجارب الزوار المنشورة'
+                          : '${heroPlace!.category} · ${heroPlace!.locationLabel}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFF4EBDD),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const Spacer(),
                     Row(
@@ -308,6 +330,237 @@ class _WelcomePanel extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      );
+}
+
+class _CategoryRail extends StatelessWidget {
+  const _CategoryRail({required this.categories, required this.onExplore});
+
+  final List<String> categories;
+  final VoidCallback onExplore;
+
+  @override
+  Widget build(BuildContext context) => ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: categories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) => _CategoryCircle(
+          label: categories[index],
+          onTap: onExplore,
+        ),
+      );
+}
+
+class _CategoryCircle extends StatelessWidget {
+  const _CategoryCircle({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  IconData get _icon {
+    if (label.contains('فندق') || label.contains('منتجع')) {
+      return Icons.hotel_outlined;
+    }
+    if (label.contains('مطعم') || label.contains('مقهى')) {
+      return Icons.restaurant_outlined;
+    }
+    if (label.contains('طبيعي') || label.contains('واحة')) {
+      return Icons.park_outlined;
+    }
+    if (label.contains('صحي')) return Icons.local_hospital_outlined;
+    if (label.contains('تراث') || label.contains('أثر')) {
+      return Icons.account_balance_outlined;
+    }
+    return Icons.explore_outlined;
+  }
+
+  Color get _color {
+    if (label.contains('فندق') || label.contains('منتجع')) {
+      return const Color(0xFF1E8A8A);
+    }
+    if (label.contains('مطعم') || label.contains('مقهى')) {
+      return const Color(0xFFC47C36);
+    }
+    if (label.contains('طبيعي') || label.contains('واحة')) {
+      return const Color(0xFF478B56);
+    }
+    if (label.contains('صحي')) return const Color(0xFF3E87B6);
+    return const Color(0xFFD9A441);
+  }
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        label: 'استكشف فئة $label',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(28),
+            child: SizedBox(
+              width: 76,
+              child: Column(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: _color.withOpacity(.14),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: _color.withOpacity(.28)),
+                    ),
+                    child: Icon(_icon, color: _color, size: 26),
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+class _FeaturedPlaceCard extends StatelessWidget {
+  const _FeaturedPlaceCard({required this.place, required this.onTap});
+
+  final Place place;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        label: 'فتح ${place.name}',
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Ink(
+              width: 246,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 16,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (place.imageUrl?.trim().isNotEmpty == true)
+                    CachedNetworkImage(
+                      imageUrl: place.imageUrl!,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => const ColoredBox(
+                        color: Color(0xFF193F38),
+                      ),
+                      errorWidget: (_, __, ___) => const ColoredBox(
+                        color: Color(0xFF193F38),
+                      ),
+                    )
+                  else
+                    const ColoredBox(color: Color(0xFF193F38)),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Color(0xE6102D28)],
+                        stops: [.32, 1],
+                      ),
+                    ),
+                  ),
+                  PositionedDirectional(
+                    start: 12,
+                    top: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xD9102D28),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        place.category,
+                        style: const TextStyle(
+                          color: Color(0xFFF5EBDD),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                  PositionedDirectional(
+                    start: 14,
+                    end: 14,
+                    bottom: 13,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          place.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.star_rounded,
+                                color: Color(0xFFE5B65A), size: 17),
+                            const SizedBox(width: 3),
+                            Text(
+                              (place.rating ?? 0).toStringAsFixed(1),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                place.locationLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFFF5EBDD),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       );

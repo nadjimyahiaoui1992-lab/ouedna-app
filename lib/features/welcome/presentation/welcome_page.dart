@@ -1,20 +1,56 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-class WelcomePage extends StatelessWidget {
-  const WelcomePage({super.key, required this.onContinue});
+import '../../places/domain/repositories/place_repository.dart';
 
+class WelcomePage extends StatefulWidget {
+  const WelcomePage({
+    super.key,
+    required this.repository,
+    required this.onContinue,
+  });
+
+  final PlaceRepository? repository;
   final VoidCallback onContinue;
+
+  @override
+  State<WelcomePage> createState() => _WelcomePageState();
+}
+
+class _WelcomePageState extends State<WelcomePage> {
+  late final Future<String?> _heroImageFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _heroImageFuture = _loadHeroImage();
+  }
+
+  Future<String?> _loadHeroImage() async {
+    final repository = widget.repository;
+    if (repository == null) return null;
+    try {
+      final places = await repository.getPublishedPlaces();
+      for (final place in places) {
+        final imageUrl = place.imageUrl?.trim();
+        if (imageUrl?.isNotEmpty == true) return imageUrl;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
         body: Stack(
           fit: StackFit.expand,
           children: [
-            Image.asset(
-              'assets/branding/souf360_el_oued_welcome.jpg',
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-              semanticLabel: 'منظر من وادي سوف',
+            FutureBuilder<String?>(
+              future: _heroImageFuture,
+              builder: (context, snapshot) => _WelcomeBackground(
+                imageUrl: snapshot.data,
+              ),
             ),
             const DecoratedBox(
               decoration: BoxDecoration(
@@ -86,9 +122,11 @@ class WelcomePage extends StatelessWidget {
                           foregroundColor: const Color(0xFF102D28),
                           padding: const EdgeInsets.symmetric(vertical: 17),
                           textStyle: const TextStyle(
-                              fontWeight: FontWeight.w900, fontSize: 17),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 17,
+                          ),
                         ),
-                        onPressed: onContinue,
+                        onPressed: widget.onContinue,
                         icon: const Icon(Icons.arrow_back_rounded),
                         label: const Text('ابدأ الاستكشاف'),
                       ),
@@ -96,9 +134,10 @@ class WelcomePage extends StatelessWidget {
                     const SizedBox(height: 10),
                     Center(
                       child: TextButton(
-                        onPressed: onContinue,
+                        onPressed: widget.onContinue,
                         style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFFFDF7EE)),
+                          foregroundColor: const Color(0xFFFDF7EE),
+                        ),
                         child: const Text('دخول كزائر'),
                       ),
                     ),
@@ -109,6 +148,25 @@ class WelcomePage extends StatelessWidget {
           ],
         ),
       );
+}
+
+class _WelcomeBackground extends StatelessWidget {
+  const _WelcomeBackground({required this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl == null || imageUrl!.isEmpty) {
+      return const ColoredBox(color: Color(0xFF102D28));
+    }
+    return CachedNetworkImage(
+      imageUrl: imageUrl!,
+      fit: BoxFit.cover,
+      placeholder: (_, __) => const ColoredBox(color: Color(0xFF102D28)),
+      errorWidget: (_, __, ___) => const ColoredBox(color: Color(0xFF102D28)),
+    );
+  }
 }
 
 class _BrandMark extends StatelessWidget {
