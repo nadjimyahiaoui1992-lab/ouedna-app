@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -10,6 +12,7 @@ import '../../places/domain/entities/place.dart';
 import '../../places/domain/repositories/place_repository.dart';
 import '../../places/presentation/place_details_page.dart';
 import '../../routing/domain/routing_service.dart';
+import '../../routing/presentation/navigation_page.dart';
 
 class SoufMapPage extends StatefulWidget {
   const SoufMapPage({
@@ -31,9 +34,11 @@ enum _MapLayer { standard, satellite }
 
 class _SoufMapPageState extends State<SoufMapPage> {
   static const _elOued = LatLng(33.3683, 6.8674);
+
   final _mapController = MapController();
   final _locationService = LocationService();
-  final _placePageController = PageController(viewportFraction: .87);
+  final _placePageController = PageController(viewportFraction: .88);
+
   late Future<List<Place>> _future;
   _MapLayer _layer = _MapLayer.standard;
   String? _category;
@@ -69,7 +74,8 @@ class _SoufMapPageState extends State<SoufMapPage> {
       _mapController.move(point, 15);
     } on LocationException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -80,10 +86,15 @@ class _SoufMapPageState extends State<SoufMapPage> {
     }
   }
 
-  void _selectPlace(Place place, List<Place> visiblePlaces, {bool syncCarousel = true}) {
+  void _selectPlace(
+    Place place,
+    List<Place> visiblePlaces, {
+    bool syncCarousel = true,
+  }) {
     if (!place.hasCoordinates) return;
     setState(() => _selectedPlace = place);
     _mapController.move(LatLng(place.latitude!, place.longitude!), 15.2);
+
     if (syncCarousel && _placePageController.hasClients) {
       final index = visiblePlaces.indexWhere((item) => item.id == place.id);
       if (index >= 0) {
@@ -95,6 +106,8 @@ class _SoufMapPageState extends State<SoufMapPage> {
       }
     }
   }
+
+  void _dismissPlaceCard() => setState(() => _selectedPlace = null);
 
   void _openPlace(Place place) {
     Navigator.of(context).push(
@@ -109,10 +122,22 @@ class _SoufMapPageState extends State<SoufMapPage> {
     );
   }
 
+  void _openNavigation(Place place) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => NavigationPage(
+          place: place,
+          routingService: widget.routingService,
+        ),
+      ),
+    );
+  }
+
   void _selectCategory(String? category) {
     setState(() {
       _category = category;
-      if (_selectedPlace != null && category != null && _selectedPlace!.category != category) {
+      if (_selectedPlace != null &&
+          (category != null && _selectedPlace!.category != category)) {
         _selectedPlace = null;
       }
     });
@@ -132,13 +157,18 @@ class _SoufMapPageState extends State<SoufMapPage> {
             final allPlaces = (snapshot.data ?? const <Place>[])
                 .where((place) => place.hasCoordinates)
                 .toList(growable: false);
-            final categories = allPlaces.map((item) => item.category).toSet().toList()..sort();
+            final categories =
+                allPlaces.map((item) => item.category).toSet().toList()..sort();
             final visiblePlaces = _category == null
                 ? allPlaces
-                : allPlaces.where((place) => place.category == _category).toList(growable: false);
-            final selected = visiblePlaces.any((item) => item.id == _selectedPlace?.id)
+                : allPlaces
+                    .where((place) => place.category == _category)
+                    .toList(growable: false);
+            final selectedPlace = visiblePlaces.any(
+              (item) => item.id == _selectedPlace?.id,
+            )
                 ? _selectedPlace
-                : (visiblePlaces.isEmpty ? null : visiblePlaces.first);
+                : null;
 
             return Stack(
               children: [
@@ -147,7 +177,8 @@ class _SoufMapPageState extends State<SoufMapPage> {
                   options: MapOptions(
                     initialCenter: allPlaces.isEmpty
                         ? _elOued
-                        : LatLng(allPlaces.first.latitude!, allPlaces.first.longitude!),
+                        : LatLng(allPlaces.first.latitude!,
+                            allPlaces.first.longitude!),
                     initialZoom: allPlaces.isEmpty ? 11.5 : 13,
                   ),
                   children: [
@@ -159,7 +190,8 @@ class _SoufMapPageState extends State<SoufMapPage> {
                     ),
                     if (_layer == _MapLayer.satellite)
                       TileLayer(
-                        urlTemplate: 'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+                        urlTemplate:
+                            'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
                         userAgentPackageName: 'com.ouedna.app',
                       ),
                     MarkerLayer(
@@ -167,7 +199,7 @@ class _SoufMapPageState extends State<SoufMapPage> {
                         ...visiblePlaces.map(
                           (place) => _placeMarker(
                             place,
-                            selected: place.id == selected?.id,
+                            selected: place.id == selectedPlace?.id,
                             onTap: () => _selectPlace(place, visiblePlaces),
                           ),
                         ),
@@ -190,7 +222,8 @@ class _SoufMapPageState extends State<SoufMapPage> {
                         _MapHeader(
                           count: visiblePlaces.length,
                           layer: _layer,
-                          onLayerChanged: (layer) => setState(() => _layer = layer),
+                          onLayerChanged: (layer) =>
+                              setState(() => _layer = layer),
                           onRefresh: _reload,
                         ),
                         const SizedBox(height: 10),
@@ -225,7 +258,9 @@ class _SoufMapPageState extends State<SoufMapPage> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               _MapControl(
-                                icon: _locating ? Icons.hourglass_top_rounded : Icons.my_location_rounded,
+                                icon: _locating
+                                    ? Icons.hourglass_top_rounded
+                                    : Icons.my_location_rounded,
                                 tooltip: 'موقعي الحالي',
                                 onTap: _locating ? null : _goToMyLocation,
                               ),
@@ -241,17 +276,18 @@ class _SoufMapPageState extends State<SoufMapPage> {
                         if (visiblePlaces.isNotEmpty) ...[
                           const SizedBox(height: 10),
                           SizedBox(
-                            height: 150,
+                            height: 118,
                             child: _PlaceCarousel(
                               controller: _placePageController,
                               places: visiblePlaces,
-                              selectedId: selected?.id,
+                              selectedId: selectedPlace?.id,
                               onPageChanged: (index) => _selectPlace(
                                 visiblePlaces[index],
                                 visiblePlaces,
                                 syncCarousel: false,
                               ),
-                              onOpen: _openPlace,
+                              onSelect: (place) =>
+                                  _selectPlace(place, visiblePlaces),
                             ),
                           ),
                         ] else ...[
@@ -262,30 +298,62 @@ class _SoufMapPageState extends State<SoufMapPage> {
                     ),
                   ),
                 ),
+                if (selectedPlace != null)
+                  PositionedDirectional(
+                    start: 16,
+                    end: 16,
+                    bottom: 154,
+                    child: _PlacePopupCard(
+                      place: selectedPlace,
+                      onDismiss: _dismissPlaceCard,
+                      onDetails: () => _openPlace(selectedPlace),
+                      onNavigate: () => _openNavigation(selectedPlace),
+                    ),
+                  ),
               ],
             );
           },
         ),
       );
 
-  Marker _placeMarker(Place place, {required bool selected, required VoidCallback onTap}) => Marker(
-        point: LatLng(place.latitude!, place.longitude!),
-        width: selected ? 76 : 66,
-        height: selected ? 88 : 78,
-        alignment: Alignment.topCenter,
-        child: Semantics(
-          button: true,
-          label: 'عرض ${place.name}',
-          child: GestureDetector(
-            onTap: onTap,
-            child: _PlaceImageMarker(place: place, selected: selected),
+  Marker _placeMarker(
+    Place place, {
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final width = selected ? 82.0 : 72.0;
+    final height = selected ? 106.0 : 94.0;
+    return Marker(
+      point: LatLng(place.latitude!, place.longitude!),
+      width: width,
+      height: height,
+      alignment: Alignment.bottomCenter,
+      child: Semantics(
+        button: true,
+        label: 'عرض ${place.name}',
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: _PlaceImageMarker(
+            place: place,
+            selected: selected,
+            width: width,
+            height: height,
           ),
         ),
-      );
+      ),
+    );
+  }
 }
 
 class _MapHeader extends StatelessWidget {
-  const _MapHeader({required this.count, required this.layer, required this.onLayerChanged, required this.onRefresh});
+  const _MapHeader({
+    required this.count,
+    required this.layer,
+    required this.onLayerChanged,
+    required this.onRefresh,
+  });
+
   final int count;
   final _MapLayer layer;
   final ValueChanged<_MapLayer> onLayerChanged;
@@ -296,7 +364,10 @@ class _MapHeader extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(.97),
           borderRadius: BorderRadius.circular(20),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 16, offset: Offset(0, 5))],
+          boxShadow: const [
+            BoxShadow(
+                color: Colors.black12, blurRadius: 16, offset: Offset(0, 5)),
+          ],
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -308,8 +379,10 @@ class _MapHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('خريطة وادنا', style: TextStyle(fontWeight: FontWeight.w900)),
-                    Text('$count معلم منشور', style: Theme.of(context).textTheme.bodySmall),
+                    const Text('خريطة وادنا',
+                        style: TextStyle(fontWeight: FontWeight.w900)),
+                    Text('$count معلم منشور',
+                        style: Theme.of(context).textTheme.bodySmall),
                   ],
                 ),
               ),
@@ -318,12 +391,22 @@ class _MapHeader extends StatelessWidget {
                 initialValue: layer,
                 onSelected: onLayerChanged,
                 itemBuilder: (_) => const [
-                  PopupMenuItem(value: _MapLayer.standard, child: Text('الخريطة العادية')),
-                  PopupMenuItem(value: _MapLayer.satellite, child: Text('صور القمر الصناعي')),
+                  PopupMenuItem(
+                      value: _MapLayer.standard,
+                      child: Text('الخريطة العادية')),
+                  PopupMenuItem(
+                      value: _MapLayer.satellite,
+                      child: Text('صور القمر الصناعي')),
                 ],
-                icon: Icon(layer == _MapLayer.standard ? Icons.layers_outlined : Icons.satellite_alt_outlined),
+                icon: Icon(
+                  layer == _MapLayer.standard
+                      ? Icons.layers_outlined
+                      : Icons.satellite_alt_outlined,
+                ),
               ),
-              IconButton(onPressed: onRefresh, icon: const Icon(Icons.refresh_rounded)),
+              IconButton(
+                  onPressed: onRefresh,
+                  icon: const Icon(Icons.refresh_rounded)),
             ],
           ),
         ),
@@ -331,7 +414,12 @@ class _MapHeader extends StatelessWidget {
 }
 
 class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({required this.label, required this.selected, required this.onTap});
+  const _CategoryChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -350,7 +438,12 @@ class _CategoryChip extends StatelessWidget {
 }
 
 class _MapControl extends StatelessWidget {
-  const _MapControl({required this.icon, required this.tooltip, required this.onTap});
+  const _MapControl({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
   final IconData icon;
   final String tooltip;
   final VoidCallback? onTap;
@@ -369,43 +462,203 @@ class _MapControl extends StatelessWidget {
 }
 
 class _PlaceImageMarker extends StatelessWidget {
-  const _PlaceImageMarker({required this.place, required this.selected});
+  const _PlaceImageMarker({
+    required this.place,
+    required this.selected,
+    required this.width,
+    required this.height,
+  });
+
   final Place place;
   final bool selected;
+  final double width;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
-    final size = selected ? 64.0 : 56.0;
-    const green = Color(0xFF174D42);
-    return Stack(
-      alignment: Alignment.topCenter,
-      clipBehavior: Clip.none,
-      children: [
-        Positioned(
-          top: size * .52,
-          child: Icon(
-            Icons.location_on_rounded,
-            color: green,
-            size: selected ? 70 : 62,
-            shadows: const [Shadow(color: Colors.black38, blurRadius: 7, offset: Offset(0, 2))],
-          ),
+    const pinGreen = Color(0xFF0E5547);
+    final borderColor = selected ? const Color(0xFF0A3E34) : pinGreen;
+    final photoSize = width - 16;
+
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 180),
+      scale: selected ? 1.0 : .93,
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Stack(
+          alignment: Alignment.topCenter,
+          children: [
+            CustomPaint(
+              size: Size(width, height),
+              painter: _PhotoPinPainter(color: borderColor),
+            ),
+            Positioned(
+              top: 7,
+              width: photoSize,
+              height: photoSize,
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(3),
+                  child: ClipOval(
+                    child: _PlaceImage(
+                      imageUrl: place.imageUrl,
+                      iconSize: selected ? 27 : 24,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (selected)
+              Positioned(
+                top: 1,
+                child: Container(
+                  width: width - 2,
+                  height: width - 2,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                ),
+              ),
+          ],
         ),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          width: size,
-          height: size,
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(color: green, width: selected ? 4 : 3),
-            boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 7, offset: Offset(0, 2))],
-          ),
-          child: ClipOval(child: _PlaceImage(imageUrl: place.imageUrl, iconSize: selected ? 25 : 22)),
-        ),
-      ],
+      ),
     );
   }
+}
+
+class _PhotoPinPainter extends CustomPainter {
+  const _PhotoPinPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final width = size.width;
+    final height = size.height;
+    final path = ui.Path()
+      ..moveTo(width * .5, 0)
+      ..cubicTo(width * .80, 0, width, width * .22, width, width * .49)
+      ..cubicTo(
+          width, width * .70, width * .72, height * .83, width * .5, height)
+      ..cubicTo(width * .28, height * .83, 0, width * .70, 0, width * .49)
+      ..cubicTo(0, width * .22, width * .20, 0, width * .5, 0)
+      ..close();
+
+    canvas.drawShadow(path, Colors.black.withOpacity(.42), 6, false);
+    canvas.drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(covariant _PhotoPinPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+class _PlacePopupCard extends StatelessWidget {
+  const _PlacePopupCard({
+    required this.place,
+    required this.onDismiss,
+    required this.onDetails,
+    required this.onNavigate,
+  });
+
+  final Place place;
+  final VoidCallback onDismiss;
+  final VoidCallback onDetails;
+  final VoidCallback onNavigate;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        elevation: 12,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        shadowColor: Colors.black54,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 90,
+                height: 90,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(17),
+                  child: _PlaceImage(imageUrl: place.imageUrl, iconSize: 30),
+                ),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: SizedBox(
+                  height: 90,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              place.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w900, fontSize: 16),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: onDismiss,
+                            icon: const Icon(Icons.close_rounded, size: 19),
+                            tooltip: 'إغلاق',
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ],
+                      ),
+                      Text(
+                        '${place.category} · ${place.locationLabel}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: onDetails,
+                            child: const Text('تفاصيل'),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: onNavigate,
+                              icon: const Icon(Icons.directions_rounded,
+                                  size: 17),
+                              label: const Text('ابدأ الرحلة'),
+                              style: FilledButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 10),
+                                textStyle: const TextStyle(
+                                    fontWeight: FontWeight.w800, fontSize: 12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
 class _PlaceCarousel extends StatelessWidget {
@@ -414,14 +667,14 @@ class _PlaceCarousel extends StatelessWidget {
     required this.places,
     required this.selectedId,
     required this.onPageChanged,
-    required this.onOpen,
+    required this.onSelect,
   });
 
   final PageController controller;
   final List<Place> places;
   final int? selectedId;
   final ValueChanged<int> onPageChanged;
-  final ValueChanged<Place> onOpen;
+  final ValueChanged<Place> onSelect;
 
   @override
   Widget build(BuildContext context) => PageView.builder(
@@ -432,15 +685,28 @@ class _PlaceCarousel extends StatelessWidget {
           final place = places[index];
           return AnimatedPadding(
             duration: const Duration(milliseconds: 180),
-            padding: EdgeInsetsDirectional.only(end: 8, top: place.id == selectedId ? 0 : 7, bottom: place.id == selectedId ? 0 : 7),
-            child: _PlacePreviewCard(place: place, selected: place.id == selectedId, onTap: () => onOpen(place)),
+            padding: EdgeInsetsDirectional.only(
+              end: 8,
+              top: place.id == selectedId ? 0 : 6,
+              bottom: place.id == selectedId ? 0 : 6,
+            ),
+            child: _PlacePreviewCard(
+              place: place,
+              selected: place.id == selectedId,
+              onTap: () => onSelect(place),
+            ),
           );
         },
       );
 }
 
 class _PlacePreviewCard extends StatelessWidget {
-  const _PlacePreviewCard({required this.place, required this.selected, required this.onTap});
+  const _PlacePreviewCard({
+    required this.place,
+    required this.selected,
+    required this.onTap,
+  });
+
   final Place place;
   final bool selected;
   final VoidCallback onTap;
@@ -458,29 +724,53 @@ class _PlacePreviewCard extends StatelessWidget {
             child: Row(
               children: [
                 SizedBox(
-                  width: 108,
+                  width: 92,
                   height: double.infinity,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: _PlaceImage(imageUrl: place.imageUrl, iconSize: 32),
+                    child: _PlaceImage(imageUrl: place.imageUrl, iconSize: 30),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 11),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 7),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(place.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
-                        const SizedBox(height: 5),
-                        Text(place.category, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700, fontSize: 12)),
+                        Text(
+                          place.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w900, fontSize: 15),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          place.category,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
                         const Spacer(),
                         Row(
                           children: [
-                            const Icon(Icons.location_on_outlined, size: 15, color: Colors.black54),
+                            const Icon(Icons.location_on_outlined,
+                                size: 15, color: Colors.black54),
                             const SizedBox(width: 3),
-                            Expanded(child: Text(place.locationLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: Colors.black54))),
+                            Expanded(
+                              child: Text(
+                                place.locationLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontSize: 11, color: Colors.black54),
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -497,6 +787,7 @@ class _PlacePreviewCard extends StatelessWidget {
 
 class _PlaceImage extends StatelessWidget {
   const _PlaceImage({required this.imageUrl, required this.iconSize});
+
   final String? imageUrl;
   final double iconSize;
 
@@ -505,19 +796,38 @@ class _PlaceImage extends StatelessWidget {
     if (imageUrl == null || imageUrl!.trim().isEmpty) {
       return ColoredBox(
         color: Theme.of(context).colorScheme.primaryContainer,
-        child: Center(child: Icon(Icons.landscape_outlined, size: iconSize, color: Theme.of(context).colorScheme.primary)),
+        child: Center(
+          child: Icon(
+            Icons.landscape_outlined,
+            size: iconSize,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
       );
     }
+
     return CachedNetworkImage(
       imageUrl: imageUrl!,
       fit: BoxFit.cover,
       placeholder: (_, __) => ColoredBox(
         color: Theme.of(context).colorScheme.primaryContainer,
-        child: const Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))),
+        child: const Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
       ),
       errorWidget: (_, __, ___) => ColoredBox(
         color: Theme.of(context).colorScheme.primaryContainer,
-        child: Center(child: Icon(Icons.image_not_supported_outlined, size: iconSize, color: Theme.of(context).colorScheme.primary)),
+        child: Center(
+          child: Icon(
+            Icons.image_not_supported_outlined,
+            size: iconSize,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
       ),
     );
   }
@@ -525,9 +835,11 @@ class _PlaceImage extends StatelessWidget {
 
 class _MyLocationMarker extends StatelessWidget {
   const _MyLocationMarker();
+
   @override
   Widget build(BuildContext context) => Container(
-        decoration: BoxDecoration(color: Colors.blue.withOpacity(.25), shape: BoxShape.circle),
+        decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(.25), shape: BoxShape.circle),
         padding: const EdgeInsets.all(7),
         child: const DecoratedBox(
           decoration: BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
@@ -538,18 +850,24 @@ class _MyLocationMarker extends StatelessWidget {
 
 class _MapEmptyNotice extends StatelessWidget {
   const _MapEmptyNotice();
+
   @override
   Widget build(BuildContext context) => Card(
         child: const Padding(
           padding: EdgeInsets.all(15),
-          child: Text('لا توجد إحداثيات منشورة حالياً. ستظهر المعالم هنا بمجرد اعتمادها من لوحة الإدارة.', textAlign: TextAlign.center),
+          child: Text(
+            'لا توجد إحداثيات منشورة حالياً. ستظهر المعالم هنا بمجرد اعتمادها من لوحة الإدارة.',
+            textAlign: TextAlign.center,
+          ),
         ),
       );
 }
 
 class _MapError extends StatelessWidget {
   const _MapError({required this.onRetry});
+
   final VoidCallback onRetry;
+
   @override
   Widget build(BuildContext context) => Center(
         child: FilledButton.icon(
