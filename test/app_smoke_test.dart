@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:souf_tour/app/souf_tour_app.dart';
+import 'package:souf_tour/core/localization/ouedna_localization.dart';
 import 'package:souf_tour/core/storage/favorites_controller.dart';
 
 void main() {
@@ -8,6 +9,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final preferences = await SharedPreferences.getInstance();
     final favorites = FavoritesController(preferences);
+    final languageController = await AppLanguageController.load(preferences);
 
     await tester.pumpWidget(
       SoufTourApp(
@@ -15,6 +17,7 @@ void main() {
         communityRepository: null,
         tourGuideRepository: null,
         favoritesController: favorites,
+        languageController: languageController,
         isBackendConfigured: false,
       ),
     );

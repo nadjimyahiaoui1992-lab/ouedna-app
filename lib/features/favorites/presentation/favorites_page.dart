@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/localization/ouedna_localization.dart';
 import '../../../core/storage/favorites_controller.dart';
 import '../../places/domain/entities/place.dart';
 import '../../places/domain/repositories/place_repository.dart';
@@ -42,7 +44,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 
   Future<List<Place>> _load() async {
-    final places = await widget.repository?.getPublishedPlaces() ?? const <Place>[];
+    final places =
+        await widget.repository?.getPublishedPlaces() ?? const <Place>[];
     return places
         .where((place) => widget.favorites.isFavorite(place.id))
         .toList(growable: false);
@@ -50,8 +53,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = OuednaStrings.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('المفضلة')),
+      appBar: AppBar(title: Text(strings.text('favorites'))),
       body: FutureBuilder<List<Place>>(
         future: _future,
         builder: (context, snapshot) {
@@ -59,23 +63,25 @@ class _FavoritesPageState extends State<FavoritesPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return const Center(child: Text('تعذر تحميل المفضلة حالياً.'));
+            return Center(child: Text(strings.text('favorites_load_error')));
           }
           final places = snapshot.data ?? const <Place>[];
           if (places.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(28),
+                padding: const EdgeInsets.all(28),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.favorite_border_rounded, size: 64),
-                    SizedBox(height: 12),
-                    Text('لم تحفظ أي معلم بعد.',
-                        style: TextStyle(fontWeight: FontWeight.w800)),
-                    SizedBox(height: 6),
+                    const Icon(Icons.favorite_border_rounded, size: 64),
+                    const SizedBox(height: 12),
                     Text(
-                      'اضغط على رمز القلب في تفاصيل أي معلم لإضافته هنا.',
+                      strings.text('no_saved_places'),
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      strings.text('no_saved_places_info'),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -101,11 +107,15 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       ),
                     ),
                   ),
-                  leading: const CircleAvatar(
-                      child: Icon(Icons.place_outlined)),
-                  title: Text(place.name,
-                      style: const TextStyle(fontWeight: FontWeight.w900)),
-                  subtitle: Text('${place.category} · ${place.locationLabel}'),
+                  leading:
+                      const CircleAvatar(child: Icon(Icons.place_outlined)),
+                  title: AutoTranslatedText(
+                    place.name,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  subtitle: AutoTranslatedText(
+                    '${place.category} · ${place.locationLabel}',
+                  ),
                   trailing: IconButton(
                     onPressed: () => widget.favorites.toggle(place.id),
                     icon: const Icon(Icons.favorite, color: Colors.red),

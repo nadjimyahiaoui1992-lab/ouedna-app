@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/souf_tour_app.dart';
 import 'core/config/app_config.dart';
+import 'core/localization/ouedna_localization.dart';
 import 'core/storage/favorites_controller.dart';
 import 'features/community/data/repositories/supabase_community_repository.dart';
 import 'features/community/domain/repositories/community_repository.dart';
@@ -42,6 +43,7 @@ Future<void> main() async {
 
   final preferences = await SharedPreferences.getInstance();
   final favoritesController = FavoritesController(preferences);
+  final languageController = await AppLanguageController.load(preferences);
 
   PlaceRepository? placeRepository;
   CommunityRepository? communityRepository;
@@ -70,6 +72,7 @@ Future<void> main() async {
       tourGuideRepository: tourGuideRepository,
       routingService: routingService,
       favoritesController: favoritesController,
+      languageController: languageController,
       isBackendConfigured: placeRepository != null,
     ),
   );

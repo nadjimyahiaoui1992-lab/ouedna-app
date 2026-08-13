@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/localization/ouedna_localization.dart';
 import '../../../core/location/location_service.dart';
 import '../../../core/storage/favorites_controller.dart';
 import '../../places/domain/entities/place.dart';
@@ -236,7 +237,8 @@ class _SoufMapPageState extends State<SoufMapPage> {
                                 scrollDirection: Axis.horizontal,
                                 children: [
                                   _CategoryChip(
-                                    label: 'الكل',
+                                    label:
+                                        OuednaStrings.of(context).text('all'),
                                     selected: _category == null,
                                     onTap: () => _selectCategory(null),
                                   ),
@@ -261,13 +263,15 @@ class _SoufMapPageState extends State<SoufMapPage> {
                                 icon: _locating
                                     ? Icons.hourglass_top_rounded
                                     : Icons.my_location_rounded,
-                                tooltip: 'موقعي الحالي',
+                                tooltip: OuednaStrings.of(context)
+                                    .text('my_location'),
                                 onTap: _locating ? null : _goToMyLocation,
                               ),
                               const SizedBox(height: 8),
                               _MapControl(
                                 icon: Icons.center_focus_strong_rounded,
-                                tooltip: 'مركز الخريطة',
+                                tooltip: OuednaStrings.of(context)
+                                    .text('map_center'),
                                 onTap: () => _mapController.move(_elOued, 11.5),
                               ),
                             ],
@@ -379,24 +383,32 @@ class _MapHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('خريطة وادنا',
-                        style: TextStyle(fontWeight: FontWeight.w900)),
-                    Text('$count معلم منشور',
-                        style: Theme.of(context).textTheme.bodySmall),
+                    Text(OuednaStrings.of(context).text('ouedna_map'),
+                        style: const TextStyle(fontWeight: FontWeight.w900)),
+                    Text(
+                      OuednaStrings.of(context).text(
+                        'published_places',
+                        values: {'count': '$count'},
+                      ),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                 ),
               ),
               PopupMenuButton<_MapLayer>(
-                tooltip: 'طبقة الخريطة',
+                tooltip: OuednaStrings.of(context).text('map_layer'),
                 initialValue: layer,
                 onSelected: onLayerChanged,
-                itemBuilder: (_) => const [
+                itemBuilder: (menuContext) => [
                   PopupMenuItem(
-                      value: _MapLayer.standard,
-                      child: Text('الخريطة العادية')),
+                    value: _MapLayer.standard,
+                    child: Text(OuednaStrings.of(context).text('standard_map')),
+                  ),
                   PopupMenuItem(
-                      value: _MapLayer.satellite,
-                      child: Text('صور القمر الصناعي')),
+                    value: _MapLayer.satellite,
+                    child:
+                        Text(OuednaStrings.of(context).text('satellite_map')),
+                  ),
                 ],
                 icon: Icon(
                   layer == _MapLayer.standard
@@ -601,23 +613,25 @@ class _PlacePopupCard extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
+                            child: AutoTranslatedText(
                               place.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.w900, fontSize: 16),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
                           IconButton(
                             onPressed: onDismiss,
                             icon: const Icon(Icons.close_rounded, size: 19),
-                            tooltip: 'إغلاق',
+                            tooltip: OuednaStrings.of(context).text('close'),
                             visualDensity: VisualDensity.compact,
                           ),
                         ],
                       ),
-                      Text(
+                      AutoTranslatedText(
                         '${place.category} · ${place.locationLabel}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -632,7 +646,8 @@ class _PlacePopupCard extends StatelessWidget {
                         children: [
                           TextButton(
                             onPressed: onDetails,
-                            child: const Text('تفاصيل'),
+                            child:
+                                Text(OuednaStrings.of(context).text('details')),
                           ),
                           const SizedBox(width: 4),
                           Expanded(
@@ -640,7 +655,8 @@ class _PlacePopupCard extends StatelessWidget {
                               onPressed: onNavigate,
                               icon: const Icon(Icons.directions_rounded,
                                   size: 17),
-                              label: const Text('ابدأ الرحلة'),
+                              label: Text(OuednaStrings.of(context)
+                                  .text('start_journey')),
                               style: FilledButton.styleFrom(
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 10),
@@ -738,15 +754,17 @@ class _PlacePreviewCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        AutoTranslatedText(
                           place.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                              fontWeight: FontWeight.w900, fontSize: 15),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 15,
+                          ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
+                        AutoTranslatedText(
                           place.category,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -763,12 +781,14 @@ class _PlacePreviewCard extends StatelessWidget {
                                 size: 15, color: Colors.black54),
                             const SizedBox(width: 3),
                             Expanded(
-                              child: Text(
+                              child: AutoTranslatedText(
                                 place.locationLabel,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                    fontSize: 11, color: Colors.black54),
+                                  fontSize: 11,
+                                  color: Colors.black54,
+                                ),
                               ),
                             ),
                           ],
@@ -853,10 +873,10 @@ class _MapEmptyNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-        child: const Padding(
-          padding: EdgeInsets.all(15),
+        child: Padding(
+          padding: const EdgeInsets.all(15),
           child: Text(
-            'لا توجد إحداثيات منشورة حالياً. ستظهر المعالم هنا بمجرد اعتمادها من لوحة الإدارة.',
+            OuednaStrings.of(context).text('no_coordinates'),
             textAlign: TextAlign.center,
           ),
         ),
@@ -873,7 +893,7 @@ class _MapError extends StatelessWidget {
         child: FilledButton.icon(
           onPressed: onRetry,
           icon: const Icon(Icons.refresh_rounded),
-          label: const Text('تعذر تحميل الخريطة — إعادة المحاولة'),
+          label: Text(OuednaStrings.of(context).text('map_load_error')),
         ),
       );
 }
