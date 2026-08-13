@@ -8,7 +8,7 @@ import '../../../core/localization/ouedna_localization.dart';
 import '../../../core/storage/favorites_controller.dart';
 import '../../community/domain/repositories/community_repository.dart';
 import '../../routing/domain/routing_service.dart';
-import '../../routing/presentation/navigation_page.dart';
+import '../../routing/presentation/live_navigation_page.dart';
 import '../domain/entities/place.dart';
 import '../domain/entities/place_gallery_image.dart';
 import '../domain/repositories/place_repository.dart';
@@ -68,14 +68,16 @@ class _PlaceDetailsPageState extends State<PlaceDetailsPage> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
                 child: FilledButton.icon(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => NavigationPage(
-                        place: place,
-                        routingService: widget.routingService,
-                      ),
-                    ),
-                  ),
+                  onPressed: widget.routingService == null
+                      ? null
+                      : () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => LiveNavigationPage(
+                                place: place,
+                                routingService: widget.routingService!,
+                              ),
+                            ),
+                          ),
                   icon: const Icon(Icons.navigation_rounded),
                   label: Text(strings.text('navigate_to_place')),
                 ),
@@ -276,13 +278,13 @@ class _Actions extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           FilledButton.icon(
-            onPressed: !place.hasCoordinates
+            onPressed: !place.hasCoordinates || routingService == null
                 ? null
                 : () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => NavigationPage(
+                        builder: (_) => LiveNavigationPage(
                           place: place,
-                          routingService: routingService,
+                          routingService: routingService!,
                         ),
                       ),
                     ),

@@ -13,7 +13,7 @@ import '../../places/domain/entities/place.dart';
 import '../../places/domain/repositories/place_repository.dart';
 import '../../places/presentation/place_details_page.dart';
 import '../../routing/domain/routing_service.dart';
-import '../../routing/presentation/navigation_page.dart';
+import '../../routing/presentation/live_navigation_page.dart';
 
 class SoufMapPage extends StatefulWidget {
   const SoufMapPage({
@@ -124,11 +124,18 @@ class _SoufMapPageState extends State<SoufMapPage> {
   }
 
   void _openNavigation(Place place) {
+    final routingService = widget.routingService;
+    if (routingService == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('خدمة الملاحة غير جاهزة حالياً.')),
+      );
+      return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => NavigationPage(
+        builder: (_) => LiveNavigationPage(
           place: place,
-          routingService: widget.routingService,
+          routingService: routingService,
         ),
       ),
     );
@@ -277,6 +284,13 @@ class _SoufMapPageState extends State<SoufMapPage> {
                             ],
                           ),
                         ),
+                        if (selectedPlace != null) ...[
+                          const SizedBox(height: 10),
+                          _MapStartNavigationButton(
+                            placeName: selectedPlace.name,
+                            onTap: () => _openNavigation(selectedPlace),
+                          ),
+                        ],
                         if (visiblePlaces.isNotEmpty) ...[
                           const SizedBox(height: 10),
                           SizedBox(
@@ -348,6 +362,36 @@ class _SoufMapPageState extends State<SoufMapPage> {
       ),
     );
   }
+}
+
+class _MapStartNavigationButton extends StatelessWidget {
+  const _MapStartNavigationButton({
+    required this.placeName,
+    required this.onTap,
+  });
+
+  final String placeName;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: onTap,
+          icon: const Icon(Icons.navigation_rounded),
+          label: Text(
+            'ابدأ الملاحة الحية إلى $placeName',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF173F38),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
+            textStyle: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+        ),
+      );
 }
 
 class _MapHeader extends StatelessWidget {
@@ -657,8 +701,7 @@ class _PlacePopupCard extends StatelessWidget {
                               onPressed: onNavigate,
                               icon: const Icon(Icons.directions_rounded,
                                   size: 17),
-                              label: Text(OuednaStrings.of(context)
-                                  .text('start_journey')),
+                              label: const Text('ابدأ الملاحة الحية'),
                               style: FilledButton.styleFrom(
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 10),

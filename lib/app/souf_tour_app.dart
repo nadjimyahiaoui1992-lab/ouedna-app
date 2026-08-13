@@ -299,7 +299,7 @@ class _OuednaAppState extends State<OuednaApp> {
                       body: Stack(
                         children: [
                           IndexedStack(index: _selectedIndex, children: pages),
-                          if (_selectedIndex != 2)
+                          if (_selectedIndex != 2 && widget.isBackendConfigured)
                             PositionedDirectional(
                               top: MediaQuery.paddingOf(context).top + 6,
                               end: 12,
