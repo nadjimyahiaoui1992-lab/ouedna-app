@@ -1,0 +1,5 @@
+{
+  "project_id": "cwbenhuiextfoiyfboxo",
+  "name": "grant_suggestions_submission_and_admin_access",
+  "query": "GRANT INSERT ON TABLE public.suggestions TO anon;\nGRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.suggestions TO authenticated;\nGRANT USAGE, SELECT ON SEQUENCE public.suggestions_id_seq TO anon, authenticated;"
+}
