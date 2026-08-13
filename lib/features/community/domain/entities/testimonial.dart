@@ -1,9 +1,11 @@
 import 'dart:typed_data';
+
 class ExperiencePhoto {
   const ExperiencePhoto({required this.bytes, required this.fileName});
   final Uint8List bytes;
   final String fileName;
 }
+
 class Testimonial {
   const Testimonial({
     required this.id,

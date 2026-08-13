@@ -3,6 +3,7 @@ import '../data/repositories/supabase_community_repository.dart';
 import '../domain/entities/testimonial.dart';
 import '../domain/repositories/community_repository.dart';
 import 'archive_page.dart';
+import 'visitor_community_forms.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key, required this.repository});
@@ -47,14 +48,16 @@ class _CommunityPageState extends State<CommunityPage> {
                         MaterialPageRoute(
                           builder: (_) => ArchivePage(
                             placeRepository: null,
-                            communityRepository:
-                                widget.repository! as SupabaseCommunityRepository,
+                            communityRepository: widget.repository!
+                                as SupabaseCommunityRepository,
                           ),
                         ),
                       );
                     }
                   : null,
               onRate: _showAppRating,
+              onExperience: widget.repository == null ? null : _openExperience,
+              onInquiry: widget.repository == null ? null : _openInquiry,
             ),
             const SizedBox(height: 20),
             Text(
@@ -106,57 +109,157 @@ class _CommunityPageState extends State<CommunityPage> {
     );
   }
 
+  Future<void> _openExperience() async {
+    final repository = widget.repository;
+    if (repository == null) return;
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ExperienceSubmissionPage(repository: repository),
+      ),
+    );
+    if (mounted) _refresh();
+  }
+
+  Future<void> _openInquiry() async {
+    final repository = widget.repository;
+    if (repository == null) return;
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => VisitorInquiryPage(repository: repository),
+      ),
+    );
+  }
+
   Future<void> _showAppRating() async {
+    final repository = widget.repository;
+    if (repository == null) return;
+    final nameController = TextEditingController();
+    final messageController = TextEditingController();
     var rating = 5.0;
+    var isSending = false;
+
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
           title: const Text('قيّم تطبيق وادنا'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('ما مدى رضاك عن تجربة استخدام التطبيق؟'),
-              const SizedBox(height: 14),
-              Slider(
-                value: rating,
-                min: 1,
-                max: 5,
-                divisions: 4,
-                label: rating.toStringAsFixed(0),
-                onChanged: (value) => setDialogState(() => rating = value),
-              ),
-              Text('${rating.toStringAsFixed(0)} / 5',
-                  style: const TextStyle(fontWeight: FontWeight.w900)),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                    'اختر التقييم واكتب ملاحظة قصيرة تساعدنا على التحسين.'),
+                const SizedBox(height: 14),
+                Slider(
+                  value: rating,
+                  min: 1,
+                  max: 5,
+                  divisions: 4,
+                  label: rating.toStringAsFixed(0),
+                  onChanged: isSending
+                      ? null
+                      : (value) => setDialogState(() => rating = value),
+                ),
+                Text('${rating.toStringAsFixed(0)} / 5',
+                    style: const TextStyle(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: nameController,
+                  enabled: !isSending,
+                  maxLength: 100,
+                  decoration:
+                      const InputDecoration(labelText: 'الاسم (اختياري)'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: messageController,
+                  enabled: !isSending,
+                  minLines: 3,
+                  maxLines: 5,
+                  maxLength: 3000,
+                  decoration: const InputDecoration(
+                    labelText: 'ملاحظتك',
+                    helperText: 'الملاحظة مطلوبة مع التقييم.',
+                    alignLabelWithHint: true,
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
+              onPressed: isSending ? null : () => Navigator.pop(dialogContext),
               child: const Text('إلغاء'),
             ),
             FilledButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('شكراً لتقييمك، رأيك يساعدنا على التطور.'),
-                  ),
-                );
-              },
-              child: const Text('إرسال'),
+              onPressed: isSending
+                  ? null
+                  : () async {
+                      final message = messageController.text.trim();
+                      if (message.isEmpty) {
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          const SnackBar(
+                              content: Text('اكتب ملاحظتك قبل الإرسال.')),
+                        );
+                        return;
+                      }
+                      setDialogState(() => isSending = true);
+                      try {
+                        await repository.submitFeedback(
+                          name: nameController.text.trim(),
+                          message: message,
+                          rating: rating.round(),
+                        );
+                        if (!dialogContext.mounted) return;
+                        Navigator.pop(dialogContext);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'شكراً لتقييمك وملاحظتك. وصلت إلى فريق وادنا.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      } catch (error) {
+                        if (!dialogContext.mounted) return;
+                        setDialogState(() => isSending = false);
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          SnackBar(content: Text('تعذر إرسال التقييم: $error')),
+                        );
+                      }
+                    },
+              child: isSending
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('إرسال التقييم'),
             ),
           ],
         ),
       ),
     );
+    nameController.dispose();
+    messageController.dispose();
   }
 }
 
 class _CommunityHero extends StatelessWidget {
-  const _CommunityHero({required this.onArchive, required this.onRate});
+  const _CommunityHero({
+    required this.onArchive,
+    required this.onRate,
+    required this.onExperience,
+    required this.onInquiry,
+  });
   final VoidCallback? onArchive;
   final VoidCallback onRate;
+  final VoidCallback? onExperience;
+  final VoidCallback? onInquiry;
 
   @override
   Widget build(BuildContext context) {
@@ -184,14 +287,24 @@ class _CommunityHero extends StatelessWidget {
               runSpacing: 8,
               children: [
                 FilledButton.icon(
-                  onPressed: onArchive,
-                  icon: const Icon(Icons.photo_library_outlined),
-                  label: const Text('الأرشيف التاريخي'),
+                  onPressed: onExperience,
+                  icon: const Icon(Icons.auto_stories_rounded),
+                  label: const Text('شارك تجربتك'),
                 ),
                 OutlinedButton.icon(
                   onPressed: onRate,
                   icon: const Icon(Icons.star_outline_rounded),
                   label: const Text('قيّم التطبيق'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: onInquiry,
+                  icon: const Icon(Icons.lightbulb_outline_rounded),
+                  label: const Text('اقتراح أو سؤال'),
+                ),
+                TextButton.icon(
+                  onPressed: onArchive,
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: const Text('الأرشيف التاريخي'),
                 ),
               ],
             ),
@@ -231,8 +344,7 @@ class _TestimonialCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Text(testimonial.message,
-                style: const TextStyle(height: 1.5)),
+            Text(testimonial.message, style: const TextStyle(height: 1.5)),
             if (testimonial.photos.isNotEmpty) ...[
               const SizedBox(height: 12),
               SizedBox(

@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/errors/app_exception.dart';
 import '../../domain/entities/testimonial.dart';
+import '../../domain/entities/visitor_inquiry.dart';
 import '../../domain/repositories/community_repository.dart';
 import '../models/testimonial_model.dart';
 
@@ -91,6 +92,78 @@ class SupabaseCommunityRepository implements CommunityRepository {
     } catch (error) {
       throw AppException(
           'تعذر إرسال تجربتك. تحقق من اتصال الإنترنت ثم أعد المحاولة.',
+          cause: error.runtimeType);
+    }
+  }
+
+  @override
+  Future<void> submitFeedback({
+    String? name,
+    required String message,
+    required int rating,
+    int? placeId,
+  }) async {
+    final normalizedMessage = message.trim();
+    if (normalizedMessage.isEmpty || normalizedMessage.length > 3000) {
+      throw const AppException('اكتب ملاحظة لا تتجاوز 3000 حرف.');
+    }
+    if (rating < 1 || rating > 5) {
+      throw const AppException('اختر تقييماً من نجمة واحدة إلى خمس نجوم.');
+    }
+
+    try {
+      await _client.from('feedback').insert({
+        'name': _nullable(name),
+        'message': normalizedMessage,
+        'rating': rating,
+        'feedback_scope': placeId == null ? 'app' : 'place',
+        'place_id': placeId,
+        'status': 'pending',
+      });
+    } on PostgrestException catch (error) {
+      throw AppException('تعذر إرسال تقييمك حالياً.', cause: error.code);
+    } catch (error) {
+      throw AppException(
+          'تعذر إرسال تقييمك. تحقق من اتصال الإنترنت ثم أعد المحاولة.',
+          cause: error.runtimeType);
+    }
+  }
+
+  @override
+  Future<void> submitInquiry({
+    String? name,
+    String? contactInfo,
+    String? subject,
+    required String message,
+    required VisitorInquiryKind kind,
+  }) async {
+    final normalizedMessage = message.trim();
+    final normalizedSubject = _nullable(subject);
+    final normalizedContact = _nullable(contactInfo);
+    if (normalizedMessage.isEmpty || normalizedMessage.length > 3000) {
+      throw const AppException('اكتب رسالتك في نص لا يتجاوز 3000 حرف.');
+    }
+    if (normalizedSubject != null && normalizedSubject.length > 160) {
+      throw const AppException('عنوان الرسالة يجب ألا يتجاوز 160 حرفاً.');
+    }
+    if (normalizedContact != null && normalizedContact.length > 180) {
+      throw const AppException('بيانات التواصل يجب ألا تتجاوز 180 حرفاً.');
+    }
+
+    try {
+      await _client.from('suggestions').insert({
+        'name': _nullable(name),
+        'contact_info': normalizedContact,
+        'subject': normalizedSubject,
+        'message': normalizedMessage,
+        'kind': kind.databaseValue,
+        'status': 'new',
+      });
+    } on PostgrestException catch (error) {
+      throw AppException('تعذر إرسال رسالتك حالياً.', cause: error.code);
+    } catch (error) {
+      throw AppException(
+          'تعذر إرسال رسالتك. تحقق من اتصال الإنترنت ثم أعد المحاولة.',
           cause: error.runtimeType);
     }
   }

@@ -1,4 +1,5 @@
 import '../../domain/entities/testimonial.dart';
+
 class TestimonialModel extends Testimonial {
   const TestimonialModel({
     required super.id,
@@ -16,7 +17,9 @@ class TestimonialModel extends Testimonial {
       }
     }
     return TestimonialModel(
-      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse(json['id'].toString()) ?? 0,
       name: json['name']?.toString(),
       message: json['message']?.toString() ?? '',
       photos: photosList,
