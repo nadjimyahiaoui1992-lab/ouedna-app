@@ -30,6 +30,8 @@ class _LiveNavigationPageState extends State<LiveNavigationPage> {
   late final StreamSubscription<NavigationVoiceEvent> _voiceSubscription;
   final MapController _mapController = MapController();
   bool _voiceEnabled = true;
+  bool _mapReady = false;
+  RouteOption? _lastFittedRoute;
 
   @override
   void initState() {
@@ -47,12 +49,39 @@ class _LiveNavigationPageState extends State<LiveNavigationPage> {
 
   void _onNavigationChanged() {
     final position = _navigation.currentPosition;
-    if (_navigation.isActive && position != null) {
+    final route = _navigation.result?.routes.isNotEmpty == true
+        ? _navigation.result!.routes.first
+        : null;
+    if (_mapReady && route != null && _lastFittedRoute != route) {
+      _fitRoute(route);
+    } else if (_mapReady && _navigation.isActive && position != null) {
       try {
         _mapController.move(position, 17);
       } catch (_) {}
     }
     if (mounted) setState(() {});
+  }
+
+  void _onMapReady() {
+    _mapReady = true;
+    final route = _navigation.result?.routes.isNotEmpty == true
+        ? _navigation.result!.routes.first
+        : null;
+    if (route != null) _fitRoute(route);
+  }
+
+  void _fitRoute(RouteOption route) {
+    if (!_mapReady || route.geometry.length < 2) return;
+    try {
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: LatLngBounds.fromPoints(route.geometry),
+          padding: const EdgeInsets.fromLTRB(34, 120, 34, 330),
+          maxZoom: 15.5,
+        ),
+      );
+      _lastFittedRoute = route;
+    } catch (_) {}
   }
 
   Future<void> _toggleNavigation() async {
@@ -138,6 +167,7 @@ class _LiveNavigationPageState extends State<LiveNavigationPage> {
               options: MapOptions(
                 initialCenter: destination,
                 initialZoom: 13,
+                onMapReady: _onMapReady,
                 interactionOptions: const InteractionOptions(
                   flags: InteractiveFlag.all,
                 ),
@@ -195,22 +225,39 @@ class _LiveNavigationPageState extends State<LiveNavigationPage> {
                 padding: const EdgeInsets.all(14),
                 child: Align(
                   alignment: Alignment.topCenter,
-                  child: _LiveNavigationStatus(
-                    isActive: _navigation.isActive,
-                    isRerouting: _navigation.isRerouting,
-                    voiceEnabled: _voiceEnabled,
-                    currentInstruction: route == null
-                        ? null
-                        : _instructionFor(
-                            route.steps.isEmpty
-                                ? null
-                                : route.steps[_navigation.activeStepIndex
-                                    .clamp(0, route.steps.length - 1)],
-                          ),
+                  heightFactor: 1,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 78),
+                    child: _LiveNavigationStatus(
+                      isActive: _navigation.isActive,
+                      isRerouting: _navigation.isRerouting,
+                      voiceEnabled: _voiceEnabled,
+                      currentInstruction: route == null
+                          ? null
+                          : _instructionFor(
+                              route.steps.isEmpty
+                                  ? null
+                                  : route.steps[_navigation.activeStepIndex
+                                      .clamp(0, route.steps.length - 1)],
+                            ),
+                    ),
                   ),
                 ),
               ),
             ),
+            if (route != null)
+              PositionedDirectional(
+                start: 14,
+                top: MediaQuery.paddingOf(context).top + 88,
+                child: FloatingActionButton.small(
+                  heroTag: 'fit-live-route',
+                  tooltip: 'عرض المسار كاملاً',
+                  onPressed: () => _fitRoute(route),
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF173F38),
+                  child: const Icon(Icons.fit_screen_rounded),
+                ),
+              ),
             if (_navigation.isLoading)
               const Center(child: _LiveLoadingCard())
             else if (_navigation.error != null)
@@ -359,9 +406,9 @@ class _LiveNavigationSheet extends StatelessWidget {
     final steps = route.steps.take(8).toList(growable: false);
 
     return DraggableScrollableSheet(
-      initialChildSize: isActive ? 0.42 : 0.34,
-      minChildSize: 0.26,
-      maxChildSize: 0.8,
+      initialChildSize: isActive ? 0.33 : 0.29,
+      minChildSize: 0.23,
+      maxChildSize: 0.72,
       builder: (context, controller) => Container(
         decoration: const BoxDecoration(
           color: Colors.white,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:geolocator/geolocator.dart';
 
 class LocationException implements Exception {
@@ -10,14 +12,30 @@ class LocationException implements Exception {
 }
 
 class LocationService {
+  static const _maximumInitialAccuracyMeters = 120.0;
+
+  /// يحصل على قراءة GPS حديثة. لا نستعمل آخر موقع مخزن للجهاز لأن ذلك قد
+  /// ينتج مسافات بعيدة وغير واقعية عند بدء رحلة جديدة.
   Future<Position> getCurrentPosition() async {
     await _ensureLocationAccess();
     try {
-      return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 15),
-        ),
+      final settings = AndroidSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+        distanceFilter: 0,
+        intervalDuration: const Duration(seconds: 2),
+      );
+      final position = await Geolocator.getPositionStream(
+        locationSettings: settings,
+      )
+          .where((item) =>
+              item.accuracy >= 0 &&
+              item.accuracy <= _maximumInitialAccuracyMeters)
+          .first
+          .timeout(const Duration(seconds: 20));
+      return position;
+    } on TimeoutException {
+      throw const LocationException(
+        'تعذر الحصول على موقع GPS دقيق. انتظر في مكان مفتوح وتحقق من تشغيل الموقع.',
       );
     } catch (error) {
       throw LocationException('تعذر تحديد موقعك حالياً: $error');
@@ -40,7 +58,9 @@ class LocationService {
       ),
     );
 
-    yield* Geolocator.getPositionStream(locationSettings: settings);
+    yield* Geolocator.getPositionStream(locationSettings: settings).where(
+      (position) => position.accuracy >= 0 && position.accuracy <= 180,
+    );
   }
 
   Future<Position?> tryGetCurrentPosition() async {
