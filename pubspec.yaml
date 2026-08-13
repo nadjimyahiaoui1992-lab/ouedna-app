@@ -1,7 +1,7 @@
 name: souf_tour
 description: Souf 360 - الدليل السياحي الذكي لولاية وادي سوف (Wadi Souf).
 publish_to: "none"
-version: 1.4.1+15
+version: 1.5.0+16
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -23,9 +23,10 @@ dependencies:
   share_plus: ^10.1.2
   http: ^1.2.2
   image_picker: ^1.1.2
+  app_links: 6.3.3
+  speech_to_text: 6.6.2
 
 dependency_overrides:
-  app_links: 6.3.3
   geolocator_android: 4.5.5
 
 dev_dependencies:

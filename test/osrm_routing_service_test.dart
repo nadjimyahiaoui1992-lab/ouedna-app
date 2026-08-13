@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:algeria_360_ai/features/routing/data/osrm_routing_service.dart';
-import 'package:algeria_360_ai/features/routing/domain/routing_models.dart';
+import 'package:souf_tour/features/routing/data/osrm_routing_service.dart';
+import 'package:souf_tour/features/routing/domain/routing_models.dart';
 
 void main() {
   test('builds an OSRM route request and parses route geometry and steps',

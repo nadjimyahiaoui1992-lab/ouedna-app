@@ -10,6 +10,12 @@ abstract interface class OfflineAwarePlaceRepository {
   bool get isUsingCachedData;
 }
 
+/// Allows an on-device copy of published place metadata for no-network browsing.
+/// Map tiles are intentionally not downloaded from public tile servers.
+abstract interface class OfflineCatalogueRepository {
+  Future<int> downloadPublishedCatalogue();
+}
+
 abstract interface class PlaceRepository {
   Future<PlacePage> getPublishedPlacesPage({
     String? query,
@@ -19,6 +25,9 @@ abstract interface class PlaceRepository {
   });
 
   Future<List<Place>> getPublishedPlaces({String? query});
+
+  /// Loads exactly one public place for a shared deep link.
+  Future<Place?> getPublishedPlaceById(int placeId);
 
   Future<List<String>> getPublishedCategories();
 

@@ -78,6 +78,31 @@ class SupabasePlaceRepository implements PlaceRepository {
   }
 
   @override
+  Future<Place?> getPublishedPlaceById(int placeId) async {
+    if (placeId <= 0) return null;
+    try {
+      final response = await _client
+          .from('places')
+          .select(_columns)
+          .eq('status', 'منشور')
+          .eq('id', placeId)
+          .maybeSingle();
+      if (response == null) return null;
+      return PlaceModel.fromJson(Map<String, dynamic>.from(response));
+    } on PostgrestException catch (error) {
+      throw AppException(
+        'تعذر فتح المعلم المُشارك حالياً.',
+        cause: error.code,
+      );
+    } catch (error) {
+      throw AppException(
+        'تعذر فتح المعلم المُشارك حالياً.',
+        cause: error.runtimeType,
+      );
+    }
+  }
+
+  @override
   Future<List<String>> getPublishedCategories() async {
     try {
       final response = await _client

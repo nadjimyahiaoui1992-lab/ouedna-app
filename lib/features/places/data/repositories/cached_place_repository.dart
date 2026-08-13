@@ -10,7 +10,10 @@ import '../../domain/repositories/place_repository.dart';
 import '../models/place_model.dart';
 
 class CachedPlaceRepository
-    implements PlaceRepository, OfflineAwarePlaceRepository {
+    implements
+        PlaceRepository,
+        OfflineAwarePlaceRepository,
+        OfflineCatalogueRepository {
   CachedPlaceRepository({
     required PlaceRepository remote,
     required SharedPreferences preferences,
@@ -63,6 +66,31 @@ class CachedPlaceRepository
   Future<List<Place>> getPublishedPlaces({String? query}) async {
     final page = await getPublishedPlacesPage(query: query, limit: 100);
     return page.places;
+  }
+
+  @override
+  Future<int> downloadPublishedCatalogue() async {
+    final page = await _remote.getPublishedPlacesPage(limit: 100);
+    await _writeCache(page.places);
+    _isUsingCachedData = false;
+    return page.places.length;
+  }
+
+  @override
+  Future<Place?> getPublishedPlaceById(int placeId) async {
+    if (placeId <= 0) return null;
+    try {
+      final place = await _remote.getPublishedPlaceById(placeId);
+      _isUsingCachedData = false;
+      return place;
+    } catch (_) {
+      final cached = _readCache();
+      _isUsingCachedData = true;
+      for (final place in cached) {
+        if (place.id == placeId) return place;
+      }
+      return null;
+    }
   }
 
   @override

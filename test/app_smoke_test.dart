@@ -1,16 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:algeria_360_ai/app/algeria_360_ai_app.dart';
-import 'package:algeria_360_ai/core/storage/favorites_controller.dart';
+import 'package:souf_tour/app/souf_tour_app.dart';
+import 'package:souf_tour/core/storage/favorites_controller.dart';
 
 void main() {
-  testWidgets('يعرض تطبيق Souf 360 حالة عدم الاتصال بشكل آمن', (tester) async {
+  testWidgets('يفتح تطبيق Souf 360 للزائر دون اتصال', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final preferences = await SharedPreferences.getInstance();
     final favorites = FavoritesController(preferences);
 
     await tester.pumpWidget(
-      Algeria360AiApp(
+      SoufTourApp(
         placeRepository: null,
         communityRepository: null,
         tourGuideRepository: null,
@@ -24,7 +24,7 @@ void main() {
     await tester.tap(find.text('دخول مباشر كزائر'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('لا يوجد اتصال بالإنترنت'), findsOneWidget);
-    expect(find.text('إعادة المحاولة'), findsOneWidget);
+    expect(find.text('الرئيسية'), findsOneWidget);
+    expect(find.text('المعالم'), findsOneWidget);
   });
 }

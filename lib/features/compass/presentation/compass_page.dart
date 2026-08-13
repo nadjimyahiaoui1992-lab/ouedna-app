@@ -42,6 +42,7 @@ class _CompassPageState extends State<CompassPage> {
   LatLng? _origin;
   CompassItinerary? _itinerary;
   bool _locating = false;
+  bool _downloadingCatalogue = false;
 
   @override
   void initState() {
@@ -71,6 +72,31 @@ class _CompassPageState extends State<CompassPage> {
       places: response[0] as List<Place>,
       categories: response[1] as List<String>,
     );
+  }
+
+  Future<void> _downloadCatalogue() async {
+    final repository = widget.repository;
+    if (repository is! OfflineCatalogueRepository || _downloadingCatalogue) {
+      return;
+    }
+    final offlineRepository = repository as OfflineCatalogueRepository;
+    setState(() => _downloadingCatalogue = true);
+    try {
+      final count = await offlineRepository.downloadPublishedCatalogue();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('تم حفظ $count معلماً منشوراً للاستخدام دون اتصال.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('تعذر تنزيل الدليل حالياً. تحقق من اتصال الإنترنت.')),
+      );
+    } finally {
+      if (mounted) setState(() => _downloadingCatalogue = false);
+    }
   }
 
   Future<void> _useMyLocation() async {
@@ -149,6 +175,12 @@ class _CompassPageState extends State<CompassPage> {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
               children: [
                 _CompassHero(locationEnabled: _origin != null),
+                const SizedBox(height: 12),
+                _OfflineDownloadCard(
+                  supported: widget.repository is OfflineCatalogueRepository,
+                  downloading: _downloadingCatalogue,
+                  onDownload: _downloadCatalogue,
+                ),
                 if (isOffline) ...[
                   const SizedBox(height: 12),
                   const OfflineCatalogueNotice(),
@@ -260,6 +292,43 @@ class _CompassData {
 
   final List<Place> places;
   final List<String> categories;
+}
+
+class _OfflineDownloadCard extends StatelessWidget {
+  const _OfflineDownloadCard({
+    required this.supported,
+    required this.downloading,
+    required this.onDownload,
+  });
+
+  final bool supported;
+  final bool downloading;
+  final VoidCallback onDownload;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: ListTile(
+          leading: const Icon(Icons.download_for_offline_outlined),
+          title: const Text('حفظ دليل سوف دون اتصال'),
+          subtitle: const Text(
+            'يحفظ معلومات المعالم المنشورة على جهازك. الخرائط الحية تحتاج اتصالاً بالإنترنت.',
+          ),
+          trailing: downloading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : OutlinedButton(
+                  onPressed: supported ? onDownload : null,
+                  child: const Text('تنزيل'),
+                ),
+        ),
+      );
 }
 
 class _CompassHero extends StatelessWidget {

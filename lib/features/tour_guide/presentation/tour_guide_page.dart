@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../domain/entities/tour_guide_answer.dart';
 import '../domain/repositories/tour_guide_repository.dart';
@@ -14,6 +15,7 @@ class TourGuidePage extends StatefulWidget {
 
 class _TourGuidePageState extends State<TourGuidePage> {
   final _controller = TextEditingController();
+  final _speech = stt.SpeechToText();
   final _messages = <_ChatMessage>[
     const _ChatMessage(
       text:
@@ -22,11 +24,77 @@ class _TourGuidePageState extends State<TourGuidePage> {
     ),
   ];
   var _isSending = false;
+  var _isListening = false;
 
   @override
   void dispose() {
+    _speech.cancel();
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _toggleVoiceInput() async {
+    if (_isListening) {
+      await _speech.stop();
+      if (mounted) setState(() => _isListening = false);
+      return;
+    }
+
+    final available = await _speech.initialize(
+      onStatus: (status) {
+        if (!mounted) return;
+        if (status == 'done' || status == 'notListening') {
+          setState(() => _isListening = false);
+        }
+      },
+      onError: (error) {
+        if (!mounted) return;
+        setState(() => _isListening = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('تعذر استخدام الإملاء الصوتي: ${error.errorMsg}')),
+        );
+      },
+    );
+    if (!available) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('التعرّف الصوتي غير متاح على هذا الجهاز.')),
+        );
+      }
+      return;
+    }
+
+    String? arabicLocale;
+    for (final locale in await _speech.locales()) {
+      if (locale.localeId.toLowerCase().startsWith('ar')) {
+        arabicLocale = locale.localeId;
+        break;
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _isListening = true);
+    await _speech.listen(
+      onResult: (result) {
+        if (!mounted || result.recognizedWords.trim().isEmpty) return;
+        _controller.value = TextEditingValue(
+          text: result.recognizedWords,
+          selection:
+              TextSelection.collapsed(offset: result.recognizedWords.length),
+        );
+      },
+      listenOptions: stt.SpeechListenOptions(
+        localeId: arabicLocale,
+        listenMode: stt.ListenMode.dictation,
+        partialResults: true,
+        autoPunctuation: true,
+        cancelOnError: true,
+        listenFor: const Duration(seconds: 25),
+        pauseFor: const Duration(seconds: 4),
+      ),
+    );
   }
 
   void _askPreset(String question) {
@@ -136,6 +204,17 @@ class _TourGuidePageState extends State<TourGuidePage> {
                         prefixIcon: Icon(Icons.auto_awesome_outlined),
                       ),
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.outlined(
+                    tooltip: _isListening
+                        ? 'إيقاف الإملاء الصوتي'
+                        : 'استخدام الإملاء الصوتي',
+                    onPressed:
+                        isAvailable && !_isSending ? _toggleVoiceInput : null,
+                    icon: Icon(_isListening
+                        ? Icons.mic_rounded
+                        : Icons.mic_none_rounded),
                   ),
                   const SizedBox(width: 8),
                   IconButton.filled(

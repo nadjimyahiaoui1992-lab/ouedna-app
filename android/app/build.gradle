@@ -6,7 +6,8 @@ plugins {
 
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
-if (keystorePropertiesFile.exists()) {
+def hasReleaseKeystore = keystorePropertiesFile.exists()
+if (hasReleaseKeystore) {
     keystorePropertiesFile.withInputStream { stream ->
         keystoreProperties.load(stream)
     }
@@ -22,6 +23,11 @@ android {
         targetSdk 35
         versionCode flutter.versionCode
         versionName flutter.versionName
+
+        // Google Play devices only. Emulator ABIs are deliberately excluded.
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
     }
 
     compileOptions {
@@ -35,7 +41,7 @@ android {
 
     signingConfigs {
         release {
-            if (keystorePropertiesFile.exists()) {
+            if (hasReleaseKeystore) {
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
                 storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
@@ -46,14 +52,35 @@ android {
 
     buildTypes {
         release {
+            // R8 and resource shrinking are enabled for Play Store builds.
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+
+            // Never silently sign a release with the Android debug certificate.
+            // Without the owner-controlled keystore, Gradle produces no signed
+            // Play Store artifact; the signing guide explains the next step.
+            if (hasReleaseKeystore) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.warn('Release signing is not configured. Add android/key.properties and the owner-controlled upload keystore before publishing to Google Play.')
+            }
         }
     }
 }
 
 flutter {
     source '../..'
+}
+
+// A Play Store artifact must never be produced unsigned or with the debug key.
+// Debug builds remain available for local development and automated checks.
+if (!hasReleaseKeystore) {
+    gradle.taskGraph.whenReady { graph ->
+        if (graph.allTasks.any { task ->
+            task.path.endsWith(':bundleRelease') || task.path.endsWith(':assembleRelease')
+        }) {
+            throw new GradleException('Release signing is required. Add android/key.properties and the owner-controlled upload keystore before building a Play Store artifact.')
+        }
+    }
 }

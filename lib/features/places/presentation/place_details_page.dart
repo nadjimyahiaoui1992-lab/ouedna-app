@@ -217,7 +217,9 @@ class _PlaceDetailsPageState extends State<PlaceDetailsPage> {
   Future<void> _sharePlace(Place place) async {
     final coordinates =
         place.hasCoordinates ? '\n${place.latitude}, ${place.longitude}' : '';
-    await Share.share('${place.name}\n${place.description}$coordinates');
+    final deepLink = 'https://souf360.vercel.app/place/${place.id}';
+    await Share.share(
+        '${place.name}\n${place.description}$coordinates\n$deepLink');
   }
 
   Future<void> _launch(Uri? uri) async {
