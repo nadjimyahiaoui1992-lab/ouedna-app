@@ -13,6 +13,7 @@ import '../features/favorites/presentation/favorites_page.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/map/presentation/souf_map_page.dart';
 import '../features/notifications/data/ouedna_notification_service.dart';
+import '../features/notifications/presentation/notification_bell.dart';
 import '../features/notifications/presentation/notification_center_page.dart';
 import '../features/places/domain/repositories/place_repository.dart';
 import '../features/places/presentation/place_details_page.dart';
@@ -305,6 +306,18 @@ class _OuednaAppState extends State<OuednaApp> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  DecoratedBox(
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xEFFFFFFF),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: NotificationBell(
+                                      repository: widget.placeRepository,
+                                      favorites: widget.favoritesController,
+                                      routingService: widget.routingService,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
                                   const LanguageSelector(compact: true),
                                   const SizedBox(width: 4),
                                   PopupMenuButton<_MenuAction>(
