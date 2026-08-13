@@ -13,6 +13,7 @@ import '../features/favorites/presentation/favorites_page.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/map/presentation/souf_map_page.dart';
 import '../features/notifications/data/ouedna_notification_service.dart';
+import '../features/notifications/presentation/notification_center_page.dart';
 import '../features/places/domain/repositories/place_repository.dart';
 import '../features/places/presentation/place_details_page.dart';
 import '../features/places/presentation/places_page.dart';
@@ -52,6 +53,7 @@ class _OuednaAppState extends State<OuednaApp> {
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
   StreamSubscription<void>? _updateActionSubscription;
+  StreamSubscription<void>? _inboxActionSubscription;
   var _selectedIndex = 0;
   var _themeMode = ThemeMode.system;
   var _showWelcome = true;
@@ -68,6 +70,7 @@ class _OuednaAppState extends State<OuednaApp> {
   void dispose() {
     _linkSubscription?.cancel();
     _updateActionSubscription?.cancel();
+    _inboxActionSubscription?.cancel();
     OuednaNotificationService.instance.dispose();
     super.dispose();
   }
@@ -78,6 +81,25 @@ class _OuednaAppState extends State<OuednaApp> {
     if (!mounted) return;
     _updateActionSubscription = service.updateActions.listen((_) {
       _openUpdateCenter();
+    });
+    _inboxActionSubscription = service.inboxActions.listen((_) {
+      _openNotificationCenter();
+    });
+  }
+
+  void _openNotificationCenter() {
+    if (!mounted) return;
+    if (_showWelcome) setState(() => _showWelcome = false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (_) => NotificationCenterPage(
+            repository: widget.placeRepository,
+            favorites: widget.favoritesController,
+            routingService: widget.routingService,
+          ),
+        ),
+      );
     });
   }
 

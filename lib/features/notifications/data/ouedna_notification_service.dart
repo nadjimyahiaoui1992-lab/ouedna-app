@@ -35,7 +35,9 @@ class OuednaNotificationService {
   static final instance = OuednaNotificationService._();
 
   final _updateActionController = StreamController<void>.broadcast();
+  final _inboxActionController = StreamController<void>.broadcast();
   Stream<void> get updateActions => _updateActionController.stream;
+  Stream<void> get inboxActions => _inboxActionController.stream;
 
   StreamSubscription<String>? _tokenRefreshSubscription;
   bool _initialized = false;
@@ -55,6 +57,8 @@ class OuednaNotificationService {
         onDidReceiveNotificationResponse: (response) {
           if (response.payload == 'app_update') {
             _updateActionController.add(null);
+          } else if (response.payload == 'visitor_notification') {
+            _inboxActionController.add(null);
           }
         },
       );
@@ -114,13 +118,15 @@ class OuednaNotificationService {
           icon: '@mipmap/ic_launcher',
         ),
       ),
-      payload: isUpdate ? 'app_update' : 'general',
+      payload: isUpdate ? 'app_update' : 'visitor_notification',
     );
   }
 
   void _handleOpenMessage(RemoteMessage message) {
     if (message.data['type'] == 'app_update') {
       _updateActionController.add(null);
+    } else {
+      _inboxActionController.add(null);
     }
   }
 
@@ -144,5 +150,6 @@ class OuednaNotificationService {
   Future<void> dispose() async {
     await _tokenRefreshSubscription?.cancel();
     await _updateActionController.close();
+    await _inboxActionController.close();
   }
 }

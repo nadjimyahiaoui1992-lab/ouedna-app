@@ -4,6 +4,7 @@ import '../../../core/localization/ouedna_localization.dart';
 import '../../../core/storage/favorites_controller.dart';
 import '../../compass/presentation/compass_page.dart';
 import '../../emergency/presentation/emergency_sheet.dart';
+import '../../notifications/presentation/notification_bell.dart';
 import '../../places/domain/repositories/place_repository.dart';
 import '../../places/presentation/visitor_place_submission_page.dart';
 import '../../routing/domain/routing_service.dart';
@@ -37,6 +38,14 @@ class HomePage extends StatelessWidget {
             pinned: true,
             backgroundColor: scheme.primary,
             foregroundColor: Colors.white,
+            actions: [
+              NotificationBell(
+                repository: repository,
+                favorites: favorites,
+                routingService: routingService,
+              ),
+              const SizedBox(width: 6),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 strings.appName,
