@@ -395,6 +395,8 @@ class _MapHeader extends StatelessWidget {
                   ],
                 ),
               ),
+              const LanguageSelector(compact: true),
+              const SizedBox(width: 2),
               PopupMenuButton<_MapLayer>(
                 tooltip: OuednaStrings.of(context).text('map_layer'),
                 initialValue: layer,
