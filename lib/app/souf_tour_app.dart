@@ -1,10 +1,7 @@
 import 'dart:async';
-
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import '../core/storage/favorites_controller.dart';
 import '../core/theme/app_theme.dart';
 import '../features/community/domain/repositories/community_repository.dart';
@@ -18,9 +15,12 @@ import '../features/places/presentation/places_page.dart';
 import '../features/routing/domain/routing_service.dart';
 import '../features/tour_guide/domain/repositories/tour_guide_repository.dart';
 import '../features/welcome/presentation/welcome_page.dart';
+import '../features/welcome/presentation/privacy_policy_page.dart';
+import '../features/updates/presentation/update_center_page.dart';
+import '../features/updates/data/app_update_service.dart';
 
-class SoufTourApp extends StatefulWidget {
-  const SoufTourApp({
+class OuednaApp extends StatefulWidget {
+  const OuednaApp({
     super.key,
     required this.placeRepository,
     required this.communityRepository,
@@ -38,10 +38,10 @@ class SoufTourApp extends StatefulWidget {
   final bool isBackendConfigured;
 
   @override
-  State<SoufTourApp> createState() => _SoufTourAppState();
+  State<OuednaApp> createState() => _OuednaAppState();
 }
 
-class _SoufTourAppState extends State<SoufTourApp> {
+class _OuednaAppState extends State<OuednaApp> {
   final _navigatorKey = GlobalKey<NavigatorState>();
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
@@ -67,9 +67,7 @@ class _SoufTourAppState extends State<SoufTourApp> {
       final initialLink = await _appLinks.getInitialLink();
       if (initialLink != null) _handleDeepLink(initialLink);
       _linkSubscription = _appLinks.uriLinkStream.listen(_handleDeepLink);
-    } catch (_) {
-      // Browsing remains fully available if the host OS cannot deliver a link.
-    }
+    } catch (_) {}
   }
 
   void _handleDeepLink(Uri uri) {
@@ -80,21 +78,14 @@ class _SoufTourAppState extends State<SoufTourApp> {
       _selectedIndex = 1;
       _openingPlaceId = placeId;
     });
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _openSharedPlace(placeId));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openSharedPlace(placeId));
   }
 
   int? _placeIdFromUri(Uri uri) {
-    if (uri.scheme == 'souf360' && uri.host == 'place') {
-      return uri.pathSegments.isEmpty
-          ? null
-          : int.tryParse(uri.pathSegments.first);
+    if (uri.scheme == 'ouedna' && uri.host == 'place') {
+      return uri.pathSegments.isEmpty ? null : int.tryParse(uri.pathSegments.first);
     }
-    final isSoufWebsite =
-        uri.scheme == 'https' && uri.host == 'souf360.vercel.app';
-    if (isSoufWebsite &&
-        uri.pathSegments.length >= 2 &&
-        uri.pathSegments.first == 'place') {
+    if (uri.scheme == 'https' && uri.host == 'ouedna.vercel.app' && uri.pathSegments.length >= 2 && uri.pathSegments.first == 'place') {
       return int.tryParse(uri.pathSegments[1]);
     }
     return null;
@@ -103,95 +94,71 @@ class _SoufTourAppState extends State<SoufTourApp> {
   Future<void> _openSharedPlace(int placeId) async {
     final repository = widget.placeRepository;
     final navigator = _navigatorKey.currentState;
-    if (repository == null || navigator == null) {
-      _showLinkMessage('تعذر فتح المعلم لأن اتصال الدليل غير متاح حالياً.');
-      return;
-    }
+    if (repository == null || navigator == null) return;
 
     try {
       final place = await repository.getPublishedPlaceById(placeId);
-      if (!mounted) return;
-      if (place == null) {
-        _showLinkMessage('هذا المعلم غير منشور أو لم يعد متاحاً.');
-        return;
-      }
-      await navigator.push(
-        MaterialPageRoute(
-          builder: (_) => PlaceDetailsPage(
-            place: place,
-            repository: repository,
-            favorites: widget.favoritesController,
-            routingService: widget.routingService,
-          ),
-        ),
-      );
-    } catch (_) {
-      if (mounted) {
-        _showLinkMessage('تعذر فتح المعلم المُشارك. تحقق من اتصال الإنترنت.');
-      }
-    } finally {
-      if (mounted && _openingPlaceId == placeId) {
-        setState(() => _openingPlaceId = null);
-      }
+      if (!mounted || place == null) return;
+      await navigator.push(MaterialPageRoute(builder: (_) => PlaceDetailsPage(place: place, repository: repository, favorites: widget.favoritesController, routingService: widget.routingService)));
+    } catch (_) {} finally {
+      if (mounted && _openingPlaceId == placeId) setState(() => _openingPlaceId = null);
     }
-  }
-
-  void _showLinkMessage(String message) {
-    final context = _navigatorKey.currentContext;
-    if (context == null) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _select(int index) => setState(() => _selectedIndex = index);
 
-  void _toggleTheme() => setState(() {
-        _themeMode =
-            _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
-      });
+  void _enterApp() {
+    setState(() => _showWelcome = false);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybePromptForUpdate());
+  }
 
-  Future<void> _openPrivacyPolicy() async {
-    final privacyUri = Uri.https('souf360.vercel.app', '/privacy');
-    final opened =
-        await launchUrl(privacyUri, mode: LaunchMode.externalApplication);
-    if (!opened && mounted) {
-      _showLinkMessage('تعذر فتح سياسة الخصوصية حالياً.');
+  Future<void> _maybePromptForUpdate() async {
+    final service = AppUpdateService();
+    try {
+      final update = await service.checkForUpdate();
+      if (!mounted || update == null || !update.isUpdateAvailable) return;
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: !update.forceUpdate,
+        builder: (dialogContext) => AlertDialog(
+          icon: const Icon(Icons.system_update_alt_rounded, size: 38),
+          title: Text('يتوفر تحديث ${update.latestVersion}'),
+          content: Text(update.releaseNotes?.isNotEmpty == true ? update.releaseNotes! : 'يتوفر إصدار أحدث من وادنا لتحسين الأداء والأمان.'),
+          actions: [
+            if (!update.forceUpdate)
+              TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('لاحقاً')),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => const UpdateCenterPage()));
+              },
+              child: const Text('عرض التحديث'),
+            ),
+          ],
+        ),
+      );
+    } catch (_) {
+      // Updates are optional; network errors must not block access to tourism content.
+    } finally {
+      service.dispose();
     }
   }
+
+  void _toggleTheme() => setState(() => _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark);
 
   @override
   Widget build(BuildContext context) {
     final pages = [
-      HomePage(
-        repository: widget.placeRepository,
-        favorites: widget.favoritesController,
-        tourGuideRepository: widget.tourGuideRepository,
-        routingService: widget.routingService,
-        onExplore: () => _select(1),
-        onMap: () => _select(2),
-      ),
-      PlacesPage(
-        repository: widget.placeRepository,
-        favorites: widget.favoritesController,
-        routingService: widget.routingService,
-      ),
-      SoufMapPage(
-        repository: widget.placeRepository,
-        favorites: widget.favoritesController,
-        routingService: widget.routingService,
-      ),
-      FavoritesPage(
-        repository: widget.placeRepository,
-        favorites: widget.favoritesController,
-        routingService: widget.routingService,
-      ),
+      HomePage(repository: widget.placeRepository, favorites: widget.favoritesController, routingService: widget.routingService, onExplore: () => _select(1), onMap: () => _select(2)),
+      PlacesPage(repository: widget.placeRepository, favorites: widget.favoritesController, routingService: widget.routingService),
+      SoufMapPage(repository: widget.placeRepository, favorites: widget.favoritesController, routingService: widget.routingService),
+      FavoritesPage(repository: widget.placeRepository, favorites: widget.favoritesController, routingService: widget.routingService),
       CommunityPage(repository: widget.communityRepository),
     ];
 
     return MaterialApp(
       navigatorKey: _navigatorKey,
-      title: 'Souf 360',
+      title: 'وادنا',
       debugShowCheckedModeBanner: false,
       locale: const Locale('ar'),
       supportedLocales: const [Locale('ar')],
@@ -199,15 +166,9 @@ class _SoufTourAppState extends State<SoufTourApp> {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: _themeMode,
-      builder: (context, child) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: child ?? const SizedBox.shrink(),
-      ),
+      builder: (context, child) => Directionality(textDirection: TextDirection.rtl, child: child ?? const SizedBox.shrink()),
       home: _showWelcome
-          ? WelcomePage(
-              repository: widget.placeRepository,
-              onContinue: () => setState(() => _showWelcome = false),
-            )
+          ? WelcomePage(repository: widget.placeRepository, onContinue: _enterApp)
           : Scaffold(
               body: Stack(
                 children: [
@@ -221,38 +182,18 @@ class _SoufTourAppState extends State<SoufTourApp> {
                         onSelected: (action) {
                           if (action == _MenuAction.theme) {
                             _toggleTheme();
+                          } else if (action == _MenuAction.privacy) {
+                            _navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => const PrivacyPolicyPage()));
                           } else {
-                            _openPrivacyPolicy();
+                            _navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => const UpdateCenterPage()));
                           }
                         },
                         itemBuilder: (_) => [
-                          PopupMenuItem(
-                            value: _MenuAction.theme,
-                            child: Row(
-                              children: [
-                                Icon(_themeMode == ThemeMode.dark
-                                    ? Icons.light_mode_outlined
-                                    : Icons.dark_mode_outlined),
-                                const SizedBox(width: 10),
-                                const Text('تبديل المظهر'),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem(
-                            value: _MenuAction.privacy,
-                            child: Row(
-                              children: [
-                                Icon(Icons.privacy_tip_outlined),
-                                SizedBox(width: 10),
-                                Text('سياسة الخصوصية'),
-                              ],
-                            ),
-                          ),
+                          PopupMenuItem(value: _MenuAction.theme, child: Row(children: [Icon(_themeMode == ThemeMode.dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined), const SizedBox(width: 10), const Text('تبديل المظهر')])),
+                          const PopupMenuItem(value: _MenuAction.privacy, child: Row(children: [Icon(Icons.privacy_tip_outlined), SizedBox(width: 10), Text('سياسة الخصوصية')])),
+                          const PopupMenuItem(value: _MenuAction.update, child: Row(children: [Icon(Icons.system_update_alt_rounded), SizedBox(width: 10), Text('تحديث التطبيق')])),
                         ],
-                        child: const CircleAvatar(
-                          radius: 22,
-                          child: Icon(Icons.settings_outlined),
-                        ),
+                        child: const CircleAvatar(radius: 22, child: Icon(Icons.settings_outlined)),
                       ),
                     ),
                 ],
@@ -261,31 +202,11 @@ class _SoufTourAppState extends State<SoufTourApp> {
                 selectedIndex: _selectedIndex,
                 onDestinationSelected: _select,
                 destinations: const [
-                  NavigationDestination(
-                    icon: Icon(Icons.home_outlined),
-                    selectedIcon: Icon(Icons.home),
-                    label: 'الرئيسية',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.explore_outlined),
-                    selectedIcon: Icon(Icons.explore),
-                    label: 'المعالم',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.map_outlined),
-                    selectedIcon: Icon(Icons.map),
-                    label: 'الخريطة',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.favorite_border),
-                    selectedIcon: Icon(Icons.favorite),
-                    label: 'المفضلة',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.forum_outlined),
-                    selectedIcon: Icon(Icons.forum),
-                    label: 'المجتمع',
-                  ),
+                  NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'الرئيسية'),
+                  NavigationDestination(icon: Icon(Icons.explore_outlined), selectedIcon: Icon(Icons.explore), label: 'المعالم'),
+                  NavigationDestination(icon: Icon(Icons.map_outlined), selectedIcon: Icon(Icons.map), label: 'الخريطة'),
+                  NavigationDestination(icon: Icon(Icons.favorite_border), selectedIcon: Icon(Icons.favorite), label: 'المفضلة'),
+                  NavigationDestination(icon: Icon(Icons.forum_outlined), selectedIcon: Icon(Icons.forum), label: 'المجتمع'),
                 ],
               ),
             ),
@@ -293,4 +214,17 @@ class _SoufTourAppState extends State<SoufTourApp> {
   }
 }
 
-enum _MenuAction { theme, privacy }
+enum _MenuAction { theme, privacy, update }
+
+/// Compatibility alias kept for existing integrations and smoke tests.
+class SoufTourApp extends OuednaApp {
+  const SoufTourApp({
+    super.key,
+    required super.placeRepository,
+    required super.communityRepository,
+    required super.tourGuideRepository,
+    super.routingService,
+    required super.favoritesController,
+    required super.isBackendConfigured,
+  });
+}

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,9 +18,31 @@ import 'features/tour_guide/domain/repositories/tour_guide_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ErrorWidget.builder = (_) => const Directionality(
+        textDirection: TextDirection.rtl,
+        child: ColoredBox(
+          color: Color(0xFFF8F7F2),
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(28),
+              child: Text(
+                'تعذر عرض هذه الصفحة حالياً. أغلق التطبيق وافتحه من جديد، ثم تحقق من اتصال الإنترنت.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF163F3A),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
 
   final preferences = await SharedPreferences.getInstance();
   final favoritesController = FavoritesController(preferences);
+
   PlaceRepository? placeRepository;
   CommunityRepository? communityRepository;
   TourGuideRepository? tourGuideRepository;
@@ -31,34 +54,17 @@ Future<void> main() async {
       publishableKey: AppConfig.supabasePublishableKey,
       authOptions: const FlutterAuthClientOptions(autoRefreshToken: true),
     );
-
     final client = Supabase.instance.client;
     placeRepository = CachedPlaceRepository(
       remote: SupabasePlaceRepository(client),
       preferences: preferences,
     );
     communityRepository = SupabaseCommunityRepository(client);
-
-    try {
-      // Always initialize the repository if we have a client.
-      // The repository will handle authentication internally or via the function call.
-      tourGuideRepository = SupabaseTourGuideRepository(client);
-
-      if (client.auth.currentSession == null) {
-        // Try to sign in anonymously to get a secure session for the AI Assistant.
-        // If it fails (e.g. disabled in dashboard), the assistant will fallback
-        // to a restricted mode or the function will handle it.
-        await client.auth.signInAnonymously();
-      }
-    } catch (_) {
-      // Browsing public content remains available.
-    }
-  } catch (_) {
-    // The UI remains usable and exposes retry states if backend setup fails.
-  }
+    tourGuideRepository = SupabaseTourGuideRepository(client);
+  } catch (_) {}
 
   runApp(
-    SoufTourApp(
+    OuednaApp(
       placeRepository: placeRepository,
       communityRepository: communityRepository,
       tourGuideRepository: tourGuideRepository,

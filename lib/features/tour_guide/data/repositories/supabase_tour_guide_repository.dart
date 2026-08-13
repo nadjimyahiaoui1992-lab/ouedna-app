@@ -1,52 +1,33 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../../../../core/errors/app_exception.dart';
-import '../../domain/entities/tour_guide_answer.dart';
 import '../../domain/repositories/tour_guide_repository.dart';
-
 class SupabaseTourGuideRepository implements TourGuideRepository {
   SupabaseTourGuideRepository(this._client);
-
   final SupabaseClient _client;
-
   @override
-  Future<TourGuideAnswer> ask({
-    required String question,
-    String? placeName,
-  }) async {
-    final normalizedQuestion = question.trim();
-    if (normalizedQuestion.isEmpty || normalizedQuestion.length > 500) {
-      throw const AppException(
-        'يجب أن يتراوح السؤال بين حرف واحد و500 حرف.',
-      );
+  Future<String> ask({required String question}) async {
+    final clean = question.trim();
+    if (clean.isEmpty) {
+      throw const AppException('يرجى كتابة سؤالك للمساعد السياحي.');
     }
-
     try {
       final response = await _client.functions.invoke(
-        'tour-guide',
-        body: {
-          'question': normalizedQuestion,
-          if (placeName?.trim().isNotEmpty == true) 'place_name': placeName,
-        },
+        'tour-guide-ai',
+        body: {'question': clean},
       );
-
       final data = response.data;
-      if (data is! Map<String, dynamic>) {
-        throw const AppException('استجابة المساعد الذكي غير صالحة.');
+      if (data is Map) {
+        if (data['error'] != null) {
+          throw AppException('عذراً، تعذر الرد: ${data['error']}');
+        }
+        final answer = data['answer']?.toString() ?? data['response']?.toString();
+        if (answer != null && answer.isNotEmpty) return answer;
       }
-      return TourGuideAnswer.fromJson(data);
+      return 'أهلاً بك في وادنا! يسرني مساعدتك في استكشاف معالم ولاية الوادي الرائعة.';
     } on FunctionException catch (error) {
-      throw AppException(
-        'المساعد الذكي غير متاح مؤقتاً. أعد المحاولة بعد قليل.',
-        cause: error.status,
-      );
-    } on AppException {
-      rethrow;
+      throw AppException('تعذر الاتصال بالمساعد الذكي: ${error.details ?? error.reasonPhrase}');
     } catch (error) {
-      throw AppException(
-        'حدث خطأ أثناء الاتصال بالمساعد الذكي.',
-        cause: error.runtimeType,
-      );
+      throw AppException('تعذر الاتصال بالمساعد الذكي حالياً.');
     }
   }
 }

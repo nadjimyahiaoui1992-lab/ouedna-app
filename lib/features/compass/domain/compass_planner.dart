@@ -1,5 +1,4 @@
-import 'package:latlong2/latlong.dart';
-
+import 'dart:math' as math;
 import '../../places/domain/entities/place.dart';
 import 'itinerary_models.dart';
 
@@ -10,61 +9,60 @@ class CompassPlanner {
     required List<Place> places,
     required CompassPreferences preferences,
   }) {
-    final candidates = places
-        .where((place) => place.hasCoordinates)
-        .where(
-          (place) =>
-              preferences.categories.isEmpty ||
-              preferences.categories.contains(place.category),
-        )
-        .toList(growable: false);
+    final selectedCategories = preferences.categories;
+    final candidates = places.where((place) {
+      if (!place.hasCoordinates) return false;
+      if (selectedCategories.isEmpty) return true;
+      return selectedCategories.contains(place.category);
+    }).toList();
 
-    if (candidates.isEmpty) {
-      return CompassItinerary(stops: const [], preferences: preferences);
-    }
+    final origin = preferences.origin;
+    candidates.sort((a, b) {
+      if (origin != null) {
+        final distanceCompare = _distanceSquared(a, origin)
+            .compareTo(_distanceSquared(b, origin));
+        if (distanceCompare != 0) return distanceCompare;
+      }
+      final ratingCompare = b.rating.compareTo(a.rating);
+      if (ratingCompare != 0) return ratingCompare;
+      return a.name.compareTo(b.name);
+    });
 
-    final remaining = [...candidates];
-    final selected = <Place>[];
-    LatLng? cursor = preferences.origin;
-
-    while (remaining.isNotEmpty &&
-        selected.length < preferences.length.targetStops) {
-      remaining.sort((left, right) {
-        final rightScore =
-            _score(right, preferences: preferences, from: cursor);
-        final leftScore = _score(left, preferences: preferences, from: cursor);
-        return rightScore.compareTo(leftScore);
-      });
-      final chosen = remaining.removeAt(0);
-      selected.add(chosen);
-      cursor = LatLng(chosen.latitude!, chosen.longitude!);
-    }
-
+    final maxStops = switch (preferences.length) {
+      JourneyLength.quick => 2,
+      JourneyLength.halfDay => 5,
+      JourneyLength.fullDay => 9,
+    };
     return CompassItinerary(
-      preferences: preferences,
-      stops: [
-        for (var index = 0; index < selected.length; index++)
-          CompassStop(place: selected[index], order: index + 1),
-      ],
+      stops: candidates
+          .take(maxStops)
+          .toList(growable: false)
+          .asMap()
+          .entries
+          .map((entry) => CompassStop(
+                place: entry.value,
+                order: entry.key + 1,
+                distanceMeters: origin == null ? null : _distanceMeters(entry.value, origin),
+              ))
+          .toList(growable: false),
     );
   }
 
-  double _score(
-    Place place, {
-    required CompassPreferences preferences,
-    required LatLng? from,
-  }) {
-    var score = (place.rating ?? 0) * 100;
-    if (preferences.categories.contains(place.category)) score += 25;
-    if (from != null) {
-      final distance = const Distance().as(
-        LengthUnit.Kilometer,
-        from,
-        LatLng(place.latitude!, place.longitude!),
-      );
-      // This is a ranking cost only. It is not displayed as navigation distance.
-      score -= distance * 4;
-    }
-    return score;
+  double _distanceSquared(Place place, dynamic origin) {
+    final latitude = (place.latitude! - origin.latitude) * math.pi / 180;
+    final longitude = (place.longitude! - origin.longitude) * math.pi / 180;
+    return latitude * latitude + longitude * longitude;
+  }
+
+  double _distanceMeters(Place place, dynamic origin) {
+    const earthRadius = 6371000.0;
+    final latitude1 = place.latitude! * math.pi / 180;
+    final latitude2 = origin.latitude * math.pi / 180;
+    final deltaLatitude = (origin.latitude - place.latitude!) * math.pi / 180;
+    final deltaLongitude = (origin.longitude - place.longitude!) * math.pi / 180;
+    final a = math.sin(deltaLatitude / 2) * math.sin(deltaLatitude / 2) +
+        math.cos(latitude1) * math.cos(latitude2) *
+            math.sin(deltaLongitude / 2) * math.sin(deltaLongitude / 2);
+    return earthRadius * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
   }
 }

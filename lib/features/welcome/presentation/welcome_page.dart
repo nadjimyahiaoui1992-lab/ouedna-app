@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../places/domain/repositories/place_repository.dart';
 
 class WelcomePage extends StatelessWidget {
@@ -18,10 +17,10 @@ class WelcomePage extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             Image.asset(
-              'assets/branding/souf360_oasis_sunset.jpg',
+              'assets/branding/welcome_bg.jpg',
               fit: BoxFit.cover,
               alignment: Alignment.center,
-              semanticLabel: 'واحة في الصحراء عند غروب الشمس',
+              semanticLabel: 'غروب الشمس الساحر في وادي سوف',
             ),
             const DecoratedBox(
               decoration: BoxDecoration(
@@ -29,8 +28,8 @@ class WelcomePage extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xE6102D28),
-                    Color(0x99102D28),
+                    Color(0xCC102D28),
+                    Color(0x66102D28),
                     Color(0xEE102D28),
                   ],
                   stops: [0, .45, 1],
@@ -48,15 +47,14 @@ class WelcomePage extends StatelessWidget {
                         _BrandMark(),
                         const Spacer(),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: const Color(0x33D9A441),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: const Color(0xFFD9A441)),
                           ),
                           child: const Text(
-                            'المنصة الرسمية لوادي سوف',
+                            'المنصة السياحية الرسمية',
                             style: TextStyle(
                               color: Color(0xFFFBF7EF),
                               fontWeight: FontWeight.w900,
@@ -68,70 +66,58 @@ class WelcomePage extends StatelessWidget {
                     ),
                     const Spacer(flex: 4),
                     const Text(
-                      'اكتشف سوف',
+                      'وادنا',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 38,
+                        fontSize: 48,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: -.5,
+                        letterSpacing: -1.0,
                       ),
                     ),
-                    const SizedBox(height: 4),
                     const Text(
-                      'عاصمة الألف قبة وقبة',
+                      'قلب الصحراء ينبض هنا',
                       style: TextStyle(
                         color: Color(0xFFD9A441),
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     const Text(
-                      'اكتشف سحر الوادي... حيث تبدأ الحكاية وتنتهي الذكريات. كثبان ذهبية، وغيطان ونخيل، وواحات وأراضٍ فلاحية تخضّرُ وسط الصحراء.',
+                      'مرحباً بك في وادنا، دليلك الذكي لاستكشاف كنوز وادي سوف. من القباب التاريخية إلى الواحات الخضراء وسط الرمال الذهبية، نحن هنا لنرشدك في رحلة لا تُنسى.',
                       style: TextStyle(
                         color: Color(0xFFE0EEE7),
                         fontSize: 15,
-                        height: 1.55,
+                        height: 1.6,
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    const _WelcomeValue(
-                        icon: Icons.auto_awesome_outlined,
-                        text: 'مساعد سياحي ذكي مدمج (AI Concierge)'),
-                    const SizedBox(height: 10),
-                    const _WelcomeValue(
-                        icon: Icons.map_outlined,
-                        text: 'خرائط وملاحة ذكية مع طبقة الأقمار الصناعية'),
-                    const SizedBox(height: 10),
-                    const _WelcomeValue(
-                        icon: Icons.forum_outlined,
-                        text: 'مجتمع الزوار وتجارب الرحلات الموثقة'),
+                    const SizedBox(height: 24),
+                    const _WelcomeValue(icon: Icons.auto_awesome_outlined, text: 'مساعد ذكي للإرشاد السياحي (AI)'),
+                    const SizedBox(height: 12),
+                    const _WelcomeValue(icon: Icons.history_edu_rounded, text: 'أرشيف وذكريات وادي سوف التاريخية'),
+                    const SizedBox(height: 12),
+                    const _WelcomeValue(icon: Icons.map_outlined, text: 'خرائط تفاعلية ومسارات سياحية دقيقة'),
                     const Spacer(flex: 3),
                     SizedBox(
                       width: double.infinity,
-                      child: FilledButton.icon(
+                      child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFFE5B65A),
+                          backgroundColor: const Color(0xFFD9A441),
                           foregroundColor: const Color(0xFF102D28),
-                          padding: const EdgeInsets.symmetric(vertical: 17),
-                          textStyle: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 17,
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
                         ),
                         onPressed: onContinue,
-                        icon: const Icon(Icons.arrow_back_rounded),
-                        label: const Text('ابدأ الاستكشاف الذكي'),
+                        child: const Text('ابدأ رحلة الاستكشاف'),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Center(
                       child: TextButton(
                         onPressed: onContinue,
-                        style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFFFDF7EE),
-                        ),
+                        style: TextButton.styleFrom(foregroundColor: Colors.white70),
                         child: const Text('دخول مباشر كزائر'),
                       ),
                     ),
@@ -147,20 +133,20 @@ class WelcomePage extends StatelessWidget {
 class _BrandMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
-        width: 52,
-        height: 52,
+        width: 56,
+        height: 56,
         decoration: BoxDecoration(
-          color: const Color(0xDDFBF7EF),
-          borderRadius: BorderRadius.circular(17),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: const Offset(0, 4))],
         ),
-        child: const Icon(Icons.travel_explore_rounded,
-            color: Color(0xFF193F38), size: 30),
+        clipBehavior: Clip.antiAlias,
+        child: Image.asset('assets/branding/icon.png', fit: BoxFit.cover),
       );
 }
 
 class _WelcomeValue extends StatelessWidget {
   const _WelcomeValue({required this.icon, required this.text});
-
   final IconData icon;
   final String text;
 
@@ -168,18 +154,16 @@ class _WelcomeValue extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         children: [
           Container(
-            width: 30,
-            height: 30,
-            decoration: const BoxDecoration(
-                color: Color(0x26E5B65A), shape: BoxShape.circle),
-            child: Icon(icon, size: 17, color: const Color(0xFFE5B65A)),
+            width: 32,
+            height: 32,
+            decoration: const BoxDecoration(color: Color(0x26D9A441), shape: BoxShape.circle),
+            child: Icon(icon, size: 18, color: const Color(0xFFD9A441)),
           ),
-          const SizedBox(width: 10),
-          Text(text,
-              style: const TextStyle(
-                  color: Color(0xFFFDF7EE),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13.5)),
+          const SizedBox(width: 12),
+          Text(
+            text,
+            style: const TextStyle(color: Color(0xFFFDF7EE), fontWeight: FontWeight.w700, fontSize: 14),
+          ),
         ],
       );
 }

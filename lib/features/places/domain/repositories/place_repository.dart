@@ -5,7 +5,7 @@ import '../entities/place_gallery_image.dart';
 import '../entities/place_page.dart';
 
 /// Exposes whether the most recent catalogue request was served from the
-/// on-device cache because Souf360 could not be reached.
+/// on-device cache because Ouedna could not be reached.
 abstract interface class OfflineAwarePlaceRepository {
   bool get isUsingCachedData;
 }
@@ -33,7 +33,7 @@ abstract interface class PlaceRepository {
 
   Future<List<PlaceGalleryImage>> getPlaceGallery(int placeId);
 
-  /// Emits when Souf360 changes the public places catalogue.
+  /// Emits when Ouedna changes the public places catalogue.
   Stream<void> watchPublishedPlaces();
 
   Future<void> submitVisitorPlace({
@@ -45,6 +45,8 @@ abstract interface class PlaceRepository {
     String? municipality,
     String? phone,
     String? mapLink,
+    double? latitude,
+    double? longitude,
     String? openingHours,
     Uint8List? imageBytes,
     String? imageFileName,

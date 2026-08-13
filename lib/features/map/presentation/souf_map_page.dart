@@ -1,27 +1,21 @@
-import 'dart:async';
-import 'dart:math' as math;
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/location/location_service.dart';
 import '../../../core/storage/favorites_controller.dart';
-import '../../../core/widgets/offline_catalogue_notice.dart';
 import '../../places/domain/entities/place.dart';
 import '../../places/domain/repositories/place_repository.dart';
-import '../../routing/domain/routing_service.dart';
 import '../../places/presentation/place_details_page.dart';
+import '../../routing/domain/routing_service.dart';
 
 class SoufMapPage extends StatefulWidget {
   const SoufMapPage({
     super.key,
     required this.repository,
     required this.favorites,
-    this.routingService,
+    required this.routingService,
   });
 
   final PlaceRepository? repository;
@@ -32,921 +26,357 @@ class SoufMapPage extends StatefulWidget {
   State<SoufMapPage> createState() => _SoufMapPageState();
 }
 
-class _SoufMapPageState extends State<SoufMapPage> {
-  static const _elOued = LatLng(33.367, 6.867);
-  static const _nearbyRadiusMeters = 20000.0;
+enum _MapLayer { standard, satellite }
 
+class _SoufMapPageState extends State<SoufMapPage> {
+  static const _elOued = LatLng(33.3683, 6.8674);
   final _mapController = MapController();
   final _locationService = LocationService();
-  final _searchController = TextEditingController();
-  List<Place> _places = const [];
-  List<String> _categories = const [];
+  late Future<List<Place>> _future;
+  _MapLayer _layer = _MapLayer.standard;
   String? _category;
-  String _query = '';
-  Position? _position;
-  String? _error;
-  bool _loading = true;
-  bool _nearbyOnly = false;
-  bool _satelliteMode = false;
-  bool _isLocating = false;
-  StreamSubscription<void>? _catalogueSubscription;
+  LatLng? _myLocation;
+  bool _locating = false;
 
   @override
   void initState() {
     super.initState();
-    _load();
-    _subscribeToCatalogue();
+    _future = _load();
   }
 
-  @override
-  void dispose() {
-    _catalogueSubscription?.cancel();
-    _searchController.dispose();
-    super.dispose();
-  }
+  Future<List<Place>> _load() =>
+      widget.repository?.getPublishedPlaces() ?? Future.value(const <Place>[]);
 
-  void _subscribeToCatalogue() {
-    final repository = widget.repository;
-    if (repository == null) return;
-    _catalogueSubscription = repository.watchPublishedPlaces().listen(
-      (_) => _load(),
-      onError: (_) {
-        // The last successfully loaded catalogue remains visible offline.
-      },
-    );
-  }
+  void _reload() => setState(() => _future = _load());
 
-  Future<void> _load() async {
-    final repository = widget.repository;
-    if (repository == null) {
-      setState(() {
-        _loading = false;
-        _error = 'تعذر الاتصال بمصدر بيانات Souf360.';
-      });
-      return;
-    }
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  Future<void> _goToMyLocation() async {
+    if (_locating) return;
+    setState(() => _locating = true);
     try {
-      final results = await Future.wait([
-        repository.getPublishedPlaces(),
-        repository.getPublishedCategories(),
-      ]);
+      final Position position = await _locationService.getCurrentPosition();
+      final point = LatLng(position.latitude, position.longitude);
       if (!mounted) return;
-      setState(() {
-        _places = (results[0] as List<Place>)
-            .where((place) => place.hasCoordinates)
-            .toList(growable: false);
-        _categories = results[1] as List<String>;
-        _loading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error =
-            'تعذر تحميل مواقع المعالم. تحقق من اتصال الإنترنت ثم أعد المحاولة.';
-      });
-    }
-  }
-
-  List<Place> get _visiblePlaces {
-    final normalized = _normalize(_query);
-    final filtered = _places.where((place) {
-      if (_category != null && place.category != _category) return false;
-      if (normalized.isNotEmpty && !_matches(place, normalized)) return false;
-      if (_nearbyOnly &&
-          (_position == null || _distanceMeters(place) > _nearbyRadiusMeters)) {
-        return false;
-      }
-      return true;
-    }).toList(growable: false);
-    if (_position != null) {
-      filtered.sort((a, b) => _distanceMeters(a).compareTo(_distanceMeters(b)));
-    }
-    return filtered;
-  }
-
-  bool _matches(Place place, String normalizedQuery) {
-    final searchable = [
-      place.name,
-      place.description,
-      place.category,
-      place.subCategory,
-      place.address,
-      place.district,
-      place.municipality,
-    ].whereType<String>().join(' ');
-    return _normalize(searchable).contains(normalizedQuery);
-  }
-
-  String _normalize(String value) => value.toLowerCase().trim();
-
-  double _distanceMeters(Place place) {
-    final position = _position;
-    if (position == null || !place.hasCoordinates) return double.infinity;
-    return Geolocator.distanceBetween(
-      position.latitude,
-      position.longitude,
-      place.latitude!,
-      place.longitude!,
-    );
-  }
-
-  String? _distanceLabel(Place place) {
-    final distance = _distanceMeters(place);
-    if (!distance.isFinite) return null;
-    return distance < 1000
-        ? '${distance.round()} م'
-        : '${(distance / 1000).toStringAsFixed(1)} كم';
-  }
-
-  Future<void> _findMyLocation({bool enableNearby = false}) async {
-    if (_isLocating) return;
-    setState(() => _isLocating = true);
-    try {
-      final position = await _locationService.getCurrentPosition();
-      if (!mounted) return;
-      setState(() {
-        _position = position;
-        _isLocating = false;
-        if (enableNearby) _nearbyOnly = true;
-      });
-      _mapController.move(LatLng(position.latitude, position.longitude), 14);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content:
-                Text('تم تحديد موقعك. يمكنك الآن استكشاف الأماكن القريبة.')),
-      );
+      setState(() => _myLocation = point);
+      _mapController.move(point, 15);
     } on LocationException catch (error) {
       if (!mounted) return;
-      setState(() => _isLocating = false);
-      _showLocationRecovery(error);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
       if (!mounted) return;
-      setState(() => _isLocating = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تعذر تحديد موقعك الآن.')),
       );
+    } finally {
+      if (mounted) setState(() => _locating = false);
     }
   }
 
-  Future<void> _toggleNearby() async {
-    if (_nearbyOnly) {
-      setState(() => _nearbyOnly = false);
-      return;
-    }
-    await _findMyLocation(enableNearby: true);
-  }
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: FutureBuilder<List<Place>>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) return _MapError(onRetry: _reload);
+            final allPlaces = (snapshot.data ?? const <Place>[])
+                .where((place) => place.hasCoordinates)
+                .toList(growable: false);
+            final categories = allPlaces.map((item) => item.category).toSet().toList()..sort();
+            final places = _category == null
+                ? allPlaces
+                : allPlaces.where((place) => place.category == _category).toList(growable: false);
+            return Stack(
+              children: [
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: allPlaces.isEmpty
+                        ? _elOued
+                        : LatLng(allPlaces.first.latitude!, allPlaces.first.longitude!),
+                    initialZoom: allPlaces.isEmpty ? 11.5 : 13,
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: _layer == _MapLayer.standard
+                          ? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+                          : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                      userAgentPackageName: 'com.ouedna.app',
+                    ),
+                    if (_layer == _MapLayer.satellite)
+                      TileLayer(
+                        urlTemplate: 'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+                        userAgentPackageName: 'com.ouedna.app',
+                      ),
+                    MarkerLayer(
+                      markers: [
+                        ...places.map(_placeMarker),
+                        if (_myLocation != null)
+                          Marker(
+                            point: _myLocation!,
+                            width: 50,
+                            height: 50,
+                            child: const _MyLocationMarker(),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+                    child: Column(
+                      children: [
+                        _MapHeader(
+                          count: places.length,
+                          layer: _layer,
+                          onLayerChanged: (layer) => setState(() => _layer = layer),
+                          onRefresh: _reload,
+                        ),
+                        const SizedBox(height: 12),
+                        if (categories.isNotEmpty)
+                          Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: SizedBox(
+                              height: 42,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                children: [
+                                  _CategoryChip(
+                                    label: 'الكل',
+                                    selected: _category == null,
+                                    onTap: () => setState(() => _category = null),
+                                  ),
+                                  ...categories.map(
+                                    (category) => _CategoryChip(
+                                      label: category,
+                                      selected: _category == category,
+                                      onTap: () => setState(() => _category = category),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        const Spacer(),
+                        Align(
+                          alignment: AlignmentDirectional.bottomEnd,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              _MapControl(
+                                icon: _locating ? Icons.hourglass_top_rounded : Icons.my_location_rounded,
+                                tooltip: 'موقعي الحالي',
+                                onTap: _locating ? null : _goToMyLocation,
+                              ),
+                              const SizedBox(height: 10),
+                              _MapControl(
+                                icon: Icons.center_focus_strong_rounded,
+                                tooltip: 'مركز الخريطة',
+                                onTap: () => _mapController.move(_elOued, 11.5),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (places.isEmpty) ...[
+                          const SizedBox(height: 12),
+                          const _MapEmptyNotice(),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      );
 
-  void _showLocationRecovery(LocationException error) {
-    final recoveryLabel = error.recoveryLabel;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(error.message),
-        duration: const Duration(seconds: 8),
-        action: recoveryLabel == null
-            ? null
-            : SnackBarAction(
-                label: recoveryLabel,
-                onPressed: () {
-                  switch (error.issue) {
-                    case LocationIssue.serviceDisabled:
-                      _locationService.openDeviceLocationSettings();
-                      break;
-                    case LocationIssue.permissionDeniedForever:
-                      _locationService.openApplicationSettings();
-                      break;
-                    default:
-                      break;
-                  }
-                },
-              ),
-      ),
-    );
-  }
-
-  void _openDetails(Place place) => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PlaceDetailsPage(
-            place: place,
-            repository: widget.repository,
-            favorites: widget.favorites,
-            routingService: widget.routingService,
+  Marker _placeMarker(Place place) => Marker(
+        point: LatLng(place.latitude!, place.longitude!),
+        width: 58,
+        height: 66,
+        child: Semantics(
+          button: true,
+          label: place.name,
+          child: GestureDetector(
+            onTap: () => _showPlace(place),
+            child: const Icon(Icons.location_on_rounded,
+                color: Color(0xFFB63D32), size: 48, shadows: [Shadow(color: Colors.black38, blurRadius: 7)]),
           ),
         ),
       );
 
-  @override
-  Widget build(BuildContext context) {
-    if (_loading) return const Center(child: _MapSkeleton());
-    if (_error != null) return _MapError(message: _error!, onRetry: _load);
-
-    final places = _visiblePlaces;
-    final photoPlaces = places
-        .where((place) => place.imageUrl?.trim().isNotEmpty == true)
-        .toList(growable: false);
-    final markers = [
-      ...places.map(_placeMarker),
-      if (_position != null) _myLocationMarker(),
-    ];
-
-    return SafeArea(
-      child: Stack(
-        children: [
-          FlutterMap(
-            mapController: _mapController,
-            options: const MapOptions(initialCenter: _elOued, initialZoom: 12),
+  void _showPlace(Place place) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              TileLayer(
-                urlTemplate: _satelliteMode
-                    ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-                    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.souf360.app',
-                maxNativeZoom: _satelliteMode ? 19 : 19,
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  child: const Icon(Icons.place_outlined),
+                ),
+                title: Text(place.name, style: const TextStyle(fontWeight: FontWeight.w900)),
+                subtitle: Text('${place.category} · ${place.locationLabel}'),
               ),
-              MarkerClusterLayerWidget(
-                options: MarkerClusterLayerOptions(
-                  maxClusterRadius: 52,
-                  size: const Size(48, 48),
-                  markers: markers,
-                  builder: (context, clusteredMarkers) =>
-                      _ClusterMarker(count: clusteredMarkers.length),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => PlaceDetailsPage(
+                          place: place,
+                          repository: widget.repository,
+                          favorites: widget.favorites,
+                          routingService: widget.routingService,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  label: const Text('عرض التفاصيل داخل وادنا'),
                 ),
               ),
             ],
           ),
-          Positioned(
-            top: 12,
-            right: 14,
-            left: 14,
-            child: Row(
-              children: [
-                Expanded(
-                  child: _MapHeader(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() => _query = value),
-                    onClear: () {
-                      _searchController.clear();
-                      setState(() => _query = '');
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Tooltip(
-                  message: _satelliteMode
-                      ? 'الخريطة العادية'
-                      : 'عرض الأقمار الصناعية',
-                  child: IconButton.filled(
-                    onPressed: () =>
-                        setState(() => _satelliteMode = !_satelliteMode),
-                    icon: Icon(_satelliteMode
-                        ? Icons.map_outlined
-                        : Icons.satellite_alt_outlined),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            top: 78,
-            right: 14,
-            left: 14,
-            child: _FilterStrip(
-              categories: _categories,
-              selectedCategory: _category,
-              nearbyOnly: _nearbyOnly,
-              onSelectCategory: (category) =>
-                  setState(() => _category = category),
-              onToggleNearby: _toggleNearby,
-            ),
-          ),
-          if (widget.repository is OfflineAwarePlaceRepository &&
-              (widget.repository as OfflineAwarePlaceRepository)
-                  .isUsingCachedData)
-            const Positioned(
-              top: 128,
-              right: 14,
-              left: 14,
-              child: OfflineCatalogueNotice(),
-            ),
-          if (places.isEmpty)
-            Positioned(
-              right: 30,
-              left: 30,
-              bottom: 118,
-              child: _NoMapResults(
-                nearbyOnly: _nearbyOnly,
-                onReset: () => setState(() {
-                  _nearbyOnly = false;
-                  _category = null;
-                  _query = '';
-                  _searchController.clear();
-                }),
-              ),
-            ),
-          if (photoPlaces.isNotEmpty)
-            Positioned(
-              right: 14,
-              left: 14,
-              bottom: 18,
-              child: _LandmarkPhotoRail(
-                places: photoPlaces,
-                distanceLabel: _distanceLabel,
-                onSelected: _showPlaceSheet,
-              ),
-            ),
-          PositionedDirectional(
-            start: 16,
-            bottom: photoPlaces.isNotEmpty ? 178 : 22,
-            child: Column(
-              children: [
-                FloatingActionButton.small(
-                  heroTag: 'my-location',
-                  tooltip: 'موقعي الحالي',
-                  onPressed: _isLocating ? null : _findMyLocation,
-                  child: _isLocating
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.my_location_outlined),
-                ),
-                const SizedBox(height: 10),
-                FloatingActionButton.small(
-                  heroTag: 'recenter',
-                  tooltip: 'إظهار المعالم',
-                  onPressed: _fitAllMarkers,
-                  child: const Icon(Icons.zoom_out_map_outlined),
-                ),
-              ],
-            ),
-          ),
-          PositionedDirectional(
-            end: 16,
-            bottom: photoPlaces.isNotEmpty ? 184 : 24,
-            child: _MapCount(count: places.length),
-          ),
-          Positioned(
-            left: 14,
-            bottom: photoPlaces.isNotEmpty ? 178 : 5,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface.withOpacity(.88),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                child: Text(
-                  _satelliteMode
-                      ? 'صور الأقمار الصناعية © Esri'
-                      : '© OpenStreetMap',
-                  style: Theme.of(context).textTheme.labelSmall,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
-
-  Marker _placeMarker(Place place) => Marker(
-        point: LatLng(place.latitude!, place.longitude!),
-        width: 56,
-        height: 64,
-        child: Semantics(
-          button: true,
-          label: 'فتح ${place.name}',
-          child: GestureDetector(
-            onTap: () => _showPlaceSheet(place),
-            child: _PlaceMarker(place: place),
-          ),
-        ),
-      );
-
-  Marker _myLocationMarker() => Marker(
-        point: LatLng(_position!.latitude, _position!.longitude),
-        width: 44,
-        height: 44,
-        child: const DecoratedBox(
-          decoration: BoxDecoration(
-            color: Color(0xFFE5B65A),
-            shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10)],
-          ),
-          child: Icon(Icons.navigation_rounded, color: Color(0xFF102D28)),
-        ),
-      );
-
-  void _fitAllMarkers() {
-    final places = _visiblePlaces;
-    if (places.isEmpty) return;
-    if (places.length == 1) {
-      _mapController.move(
-          LatLng(places.first.latitude!, places.first.longitude!), 14);
-      return;
-    }
-    final latitudes = places.map((place) => place.latitude!).toList();
-    final longitudes = places.map((place) => place.longitude!).toList();
-    _mapController.move(
-      LatLng(
-        latitudes.reduce((a, b) => a + b) / latitudes.length,
-        longitudes.reduce((a, b) => a + b) / longitudes.length,
-      ),
-      math.max(10, 13 - math.log(places.length) / math.ln2),
-    );
-  }
-
-  void _showPlaceSheet(Place place) => showModalBottomSheet<void>(
-        context: context,
-        showDragHandle: true,
-        isScrollControlled: true,
-        builder: (context) => _PlaceSheet(
-          place: place,
-          distanceLabel: _distanceLabel(place),
-          onDetails: () {
-            Navigator.pop(context);
-            _openDetails(place);
-          },
-        ),
-      );
 }
 
 class _MapHeader extends StatelessWidget {
-  const _MapHeader({
-    required this.controller,
-    required this.onChanged,
-    required this.onClear,
-  });
-
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) => Material(
-        elevation: 3,
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        child: TextField(
-          controller: controller,
-          onChanged: onChanged,
-          textInputAction: TextInputAction.search,
-          decoration: InputDecoration(
-            hintText: 'ابحث عن مكان على الخريطة',
-            prefixIcon: const Icon(Icons.search_rounded),
-            suffixIcon: controller.text.isEmpty
-                ? null
-                : IconButton(
-                    onPressed: onClear, icon: const Icon(Icons.close_rounded)),
-            border: InputBorder.none,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-          ),
-        ),
-      );
-}
-
-class _FilterStrip extends StatelessWidget {
-  const _FilterStrip({
-    required this.categories,
-    required this.selectedCategory,
-    required this.nearbyOnly,
-    required this.onSelectCategory,
-    required this.onToggleNearby,
-  });
-
-  final List<String> categories;
-  final String? selectedCategory;
-  final bool nearbyOnly;
-  final ValueChanged<String?> onSelectCategory;
-  final VoidCallback onToggleNearby;
-
-  @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            FilterChip(
-              avatar: Icon(
-                  nearbyOnly ? Icons.near_me_rounded : Icons.near_me_outlined,
-                  size: 18),
-              label: const Text('قريب مني'),
-              selected: nearbyOnly,
-              onSelected: (_) => onToggleNearby(),
-            ),
-            const SizedBox(width: 8),
-            ChoiceChip(
-              label: const Text('الكل'),
-              selected: selectedCategory == null,
-              onSelected: (_) => onSelectCategory(null),
-            ),
-            ...categories.map(
-              (category) => Padding(
-                padding: const EdgeInsetsDirectional.only(start: 8),
-                child: ChoiceChip(
-                  label: Text(category),
-                  selected: selectedCategory == category,
-                  onSelected: (_) => onSelectCategory(category),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-}
-
-class _PlaceMarker extends StatelessWidget {
-  const _PlaceMarker({required this.place});
-  final Place place;
-
-  @override
-  Widget build(BuildContext context) => Stack(
-        alignment: Alignment.topCenter,
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            top: 38,
-            child: Transform.rotate(
-              angle: math.pi / 4,
-              child: Container(
-                  width: 16, height: 16, color: const Color(0xFF193F38)),
-            ),
-          ),
-          Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(3),
-            decoration: const BoxDecoration(
-              color: Color(0xFF193F38),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black26, blurRadius: 8, offset: Offset(0, 3))
-              ],
-            ),
-            child: ClipOval(
-              child: place.imageUrl == null
-                  ? const ColoredBox(
-                      color: Color(0xFFE5B65A),
-                      child:
-                          Icon(Icons.place_rounded, color: Color(0xFF193F38)),
-                    )
-                  : CachedNetworkImage(
-                      imageUrl: place.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => const ColoredBox(
-                        color: Color(0xFFE5B65A),
-                        child:
-                            Icon(Icons.place_rounded, color: Color(0xFF193F38)),
-                      ),
-                    ),
-            ),
-          ),
-        ],
-      );
-}
-
-class _ClusterMarker extends StatelessWidget {
-  const _ClusterMarker({required this.count});
+  const _MapHeader({required this.count, required this.layer, required this.onLayerChanged, required this.onRefresh});
   final int count;
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: const BoxDecoration(
-          color: Color(0xFF193F38),
-          shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 8)],
-        ),
-        child: Center(
-          child: Text('$count',
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w800)),
-        ),
-      );
-}
-
-class _PlaceSheet extends StatelessWidget {
-  const _PlaceSheet({
-    required this.place,
-    required this.distanceLabel,
-    required this.onDetails,
-  });
-
-  final Place place;
-  final String? distanceLabel;
-  final VoidCallback onDetails;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(
-                    width: 76,
-                    height: 76,
-                    child: place.imageUrl == null
-                        ? const ColoredBox(
-                            color: Color(0xFFE5B65A),
-                            child: Icon(Icons.landscape_outlined))
-                        : CachedNetworkImage(
-                            imageUrl: place.imageUrl!,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) =>
-                                const Icon(Icons.broken_image_outlined),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(place.category,
-                          style: Theme.of(context).textTheme.labelLarge),
-                      const SizedBox(height: 4),
-                      Text(
-                        place.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w900),
-                      ),
-                      if (distanceLabel != null || place.rating != null) ...[
-                        const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 10,
-                          children: [
-                            if (distanceLabel != null)
-                              Text('يبعد $distanceLabel'),
-                            if (place.rating != null)
-                              Text('★ ${place.rating!.toStringAsFixed(1)}',
-                                  style: const TextStyle(
-                                      color: Color(0xFFD9A441))),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: onDetails,
-                icon: const Icon(Icons.arrow_back_rounded),
-                label: const Text('عرض التفاصيل'),
-              ),
-            ),
-          ],
-        ),
-      );
-}
-
-class _MapCount extends StatelessWidget {
-  const _MapCount({required this.count});
-  final int count;
+  final _MapLayer layer;
+  final ValueChanged<_MapLayer> onLayerChanged;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface.withOpacity(.95),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
+          color: Colors.white.withOpacity(.96),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 16, offset: Offset(0, 5))],
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-          child: Text('$count مكان',
-              style: const TextStyle(fontWeight: FontWeight.w800)),
-        ),
-      );
-}
-
-class _LandmarkPhotoRail extends StatelessWidget {
-  const _LandmarkPhotoRail({
-    required this.places,
-    required this.distanceLabel,
-    required this.onSelected,
-  });
-
-  final List<Place> places;
-  final String? Function(Place place) distanceLabel;
-  final ValueChanged<Place> onSelected;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-        height: 148,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsetsDirectional.only(start: 2, end: 2),
-          itemCount: places.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 10),
-          itemBuilder: (context, index) => _LandmarkPhotoCard(
-            place: places[index],
-            distanceLabel: distanceLabel(places[index]),
-            onTap: () => onSelected(places[index]),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          child: Row(
+            children: [
+              const CircleAvatar(child: Icon(Icons.map_outlined)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('خريطة وادنا', style: TextStyle(fontWeight: FontWeight.w900)),
+                    Text('$count معلم منشور', style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                ),
+              ),
+              PopupMenuButton<_MapLayer>(
+                tooltip: 'طبقة الخريطة',
+                initialValue: layer,
+                onSelected: onLayerChanged,
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: _MapLayer.standard, child: Text('الخريطة العادية')),
+                  PopupMenuItem(value: _MapLayer.satellite, child: Text('صور القمر الصناعي')),
+                ],
+                icon: Icon(layer == _MapLayer.standard ? Icons.layers_outlined : Icons.satellite_alt_outlined),
+              ),
+              IconButton(onPressed: onRefresh, icon: const Icon(Icons.refresh_rounded)),
+            ],
           ),
         ),
       );
 }
 
-class _LandmarkPhotoCard extends StatelessWidget {
-  const _LandmarkPhotoCard({
-    required this.place,
-    required this.distanceLabel,
-    required this.onTap,
-  });
-
-  final Place place;
-  final String? distanceLabel;
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({required this.label, required this.selected, required this.onTap});
+  final String label;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-        button: true,
-        label: 'فتح ${place.name} على الخريطة',
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(22),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
-            child: Ink(
-              width: 224,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: Colors.white.withOpacity(.28)),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black45,
-                    blurRadius: 18,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  CachedNetworkImage(
-                    imageUrl: place.imageUrl!,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => ColoredBox(
-                      color:
-                          Theme.of(context).colorScheme.surfaceContainerHighest,
-                      child: const Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                    ),
-                    errorWidget: (_, __, ___) => ColoredBox(
-                      color:
-                          Theme.of(context).colorScheme.surfaceContainerHighest,
-                      child: const Center(
-                        child: Icon(Icons.image_not_supported_outlined),
-                      ),
-                    ),
-                  ),
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Color(0xD9102D28)],
-                        stops: [.28, 1],
-                      ),
-                    ),
-                  ),
-                  PositionedDirectional(
-                    start: 12,
-                    end: 12,
-                    bottom: 12,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          place.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Row(
-                          children: [
-                            const Icon(Icons.place_outlined,
-                                color: Color(0xFFE5B65A), size: 16),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                distanceLabel == null
-                                    ? place.category
-                                    : '${place.category} · $distanceLabel',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Color(0xFFF5EBDD),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsetsDirectional.only(end: 8),
+        child: ChoiceChip(
+          label: Text(label),
+          selected: selected,
+          onSelected: (_) => onTap(),
+          backgroundColor: Colors.white.withOpacity(.94),
         ),
       );
 }
 
-class _NoMapResults extends StatelessWidget {
-  const _NoMapResults({required this.nearbyOnly, required this.onReset});
-  final bool nearbyOnly;
-  final VoidCallback onReset;
+class _MapControl extends StatelessWidget {
+  const _MapControl({required this.icon, required this.tooltip, required this.onTap});
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) => Material(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
-        elevation: 3,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.location_off_outlined, size: 34),
-              const SizedBox(height: 8),
-              Text(
-                nearbyOnly
-                    ? 'لا توجد أماكن منشورة قريبة منك حالياً.'
-                    : 'لا توجد نتائج مطابقة على الخريطة.',
-                textAlign: TextAlign.center,
-              ),
-              TextButton(
-                  onPressed: onReset, child: const Text('إظهار كل المعالم')),
-            ],
+        elevation: 4,
+        shape: const CircleBorder(),
+        child: IconButton(
+          tooltip: tooltip,
+          onPressed: onTap,
+          icon: Icon(icon),
+        ),
+      );
+}
+
+class _MyLocationMarker extends StatelessWidget {
+  const _MyLocationMarker();
+  @override
+  Widget build(BuildContext context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(.25),
+          shape: BoxShape.circle,
+        ),
+        padding: const EdgeInsets.all(7),
+        child: const DecoratedBox(
+          decoration: BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+          child: SizedBox.expand(),
+        ),
+      );
+}
+
+class _MapEmptyNotice extends StatelessWidget {
+  const _MapEmptyNotice();
+  @override
+  Widget build(BuildContext context) => Card(
+        child: const Padding(
+          padding: EdgeInsets.all(15),
+          child: Text(
+            'لا توجد إحداثيات منشورة حالياً. ستظهر المعالم هنا بمجرد اعتمادها من لوحة الإدارة.',
+            textAlign: TextAlign.center,
           ),
         ),
       );
 }
 
 class _MapError extends StatelessWidget {
-  const _MapError({required this.message, required this.onRetry});
-  final String message;
+  const _MapError({required this.onRetry});
   final VoidCallback onRetry;
-
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.map_outlined, size: 48),
-              const SizedBox(height: 12),
-              Text(message, textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              FilledButton(
-                  onPressed: onRetry, child: const Text('إعادة المحاولة')),
-            ],
-          ),
+        child: FilledButton.icon(
+          onPressed: onRetry,
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('تعذر تحميل الخريطة — إعادة المحاولة'),
         ),
-      );
-}
-
-class _MapSkeleton extends StatelessWidget {
-  const _MapSkeleton();
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest),
-        child: const Center(child: Icon(Icons.map_outlined, size: 56)),
       );
 }

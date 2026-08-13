@@ -153,6 +153,8 @@ class SupabasePlaceRepository implements PlaceRepository {
     String? municipality,
     String? phone,
     String? mapLink,
+    double? latitude,
+    double? longitude,
     String? openingHours,
     Uint8List? imageBytes,
     String? imageFileName,
@@ -180,8 +182,9 @@ class SupabasePlaceRepository implements PlaceRepository {
               ? municipality!.trim()
               : null,
           'phone': phone?.trim().isNotEmpty == true ? phone!.trim() : null,
-          'map_link':
-              mapLink?.trim().isNotEmpty == true ? mapLink!.trim() : null,
+                    'map_link': mapLink?.trim().isNotEmpty == true ? mapLink!.trim() : null,
+          'latitude': latitude,
+          'longitude': longitude,
           'opening_hours': openingHours?.trim().isNotEmpty == true
               ? openingHours!.trim()
               : null,

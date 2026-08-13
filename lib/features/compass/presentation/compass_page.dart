@@ -63,7 +63,7 @@ class _CompassPageState extends State<CompassPage> {
   Future<_CompassData> _load() async {
     final repository = widget.repository;
     if (repository == null)
-      throw StateError('لا يتوفر اتصال بمصدر بيانات Souf360.');
+      throw StateError('لا يتوفر اتصال بمصدر بيانات وادنا.');
     final response = await Future.wait([
       repository.getPublishedPlaces(),
       repository.getPublishedCategories(),
@@ -147,7 +147,7 @@ class _CompassPageState extends State<CompassPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          title: const Text('بوصلة سوف'),
+          title: const Text('بوصلة وادنا'),
           actions: [
             IconButton(
               tooltip: 'عرض الخريطة',
@@ -313,7 +313,7 @@ class _OfflineDownloadCard extends StatelessWidget {
         ),
         child: ListTile(
           leading: const Icon(Icons.download_for_offline_outlined),
-          title: const Text('حفظ دليل سوف دون اتصال'),
+          title: const Text('حفظ دليل وادنا دون اتصال'),
           subtitle: const Text(
             'يحفظ معلومات المعالم المنشورة على جهازك. الخرائط الحية تحتاج اتصالاً بالإنترنت.',
           ),

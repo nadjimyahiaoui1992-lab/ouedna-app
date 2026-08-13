@@ -23,7 +23,7 @@ class CachedPlaceRepository
   final PlaceRepository _remote;
   final SharedPreferences _preferences;
 
-  static const _placesCacheKey = 'souf360.cached_places.v1';
+  static const _placesCacheKey = 'ouedna.cached_places.v1';
   bool _isUsingCachedData = false;
 
   @override
@@ -120,6 +120,8 @@ class CachedPlaceRepository
     String? municipality,
     String? phone,
     String? mapLink,
+    double? latitude,
+    double? longitude,
     String? openingHours,
     Uint8List? imageBytes,
     String? imageFileName,
@@ -133,6 +135,8 @@ class CachedPlaceRepository
         municipality: municipality,
         phone: phone,
         mapLink: mapLink,
+        latitude: latitude,
+        longitude: longitude,
         openingHours: openingHours,
         imageBytes: imageBytes,
         imageFileName: imageFileName,

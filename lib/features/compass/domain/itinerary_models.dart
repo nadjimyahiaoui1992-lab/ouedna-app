@@ -1,29 +1,12 @@
+import '../../places/domain/entities/place.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../places/domain/entities/place.dart';
-
-enum JourneyLength {
-  quick,
-  halfDay,
-  fullDay;
-
-  String get label => switch (this) {
-        JourneyLength.quick => 'سريع',
-        JourneyLength.halfDay => 'نصف يوم',
-        JourneyLength.fullDay => 'يوم كامل',
-      };
-
-  int get targetStops => switch (this) {
-        JourneyLength.quick => 2,
-        JourneyLength.halfDay => 3,
-        JourneyLength.fullDay => 5,
-      };
-}
+enum JourneyLength { quick, halfDay, fullDay }
 
 class CompassPreferences {
   const CompassPreferences({
-    required this.length,
-    required this.categories,
+    this.length = JourneyLength.halfDay,
+    this.categories = const <String>{},
     this.origin,
   });
 
@@ -33,23 +16,14 @@ class CompassPreferences {
 }
 
 class CompassStop {
-  const CompassStop({
-    required this.place,
-    required this.order,
-  });
-
+  const CompassStop({required this.place, this.distanceMeters, this.order = 0});
   final Place place;
+  final double? distanceMeters;
   final int order;
 }
 
 class CompassItinerary {
-  const CompassItinerary({
-    required this.stops,
-    required this.preferences,
-  });
-
+  const CompassItinerary({required this.stops});
   final List<CompassStop> stops;
-  final CompassPreferences preferences;
-
   bool get isEmpty => stops.isEmpty;
 }

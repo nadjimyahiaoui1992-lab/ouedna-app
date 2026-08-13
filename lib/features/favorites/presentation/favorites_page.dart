@@ -1,12 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-
 import '../../../core/storage/favorites_controller.dart';
 import '../../places/domain/entities/place.dart';
 import '../../places/domain/repositories/place_repository.dart';
 import '../../places/presentation/place_details_page.dart';
-import '../../places/presentation/widgets/place_card.dart';
 import '../../routing/domain/routing_service.dart';
 
 class FavoritesPage extends StatefulWidget {
@@ -14,7 +10,7 @@ class FavoritesPage extends StatefulWidget {
     super.key,
     required this.repository,
     required this.favorites,
-    this.routingService,
+    required this.routingService,
   });
 
   final PlaceRepository? repository;
@@ -26,117 +22,100 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class _FavoritesPageState extends State<FavoritesPage> {
-  Future<List<Place>>? _future;
-  StreamSubscription<void>? _subscription;
+  late Future<List<Place>> _future;
 
   @override
   void initState() {
     super.initState();
-    _reload();
-    _subscription =
-        widget.repository?.watchPublishedPlaces().listen((_) => _reload());
+    _future = _load();
+    widget.favorites.addListener(_onFavoritesChanged);
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    widget.favorites.removeListener(_onFavoritesChanged);
     super.dispose();
   }
 
-  void _reload() {
-    setState(() {
-      _future = _loadPlaces();
-    });
+  void _onFavoritesChanged() {
+    if (mounted) setState(() => _future = _load());
   }
 
-  Future<List<Place>> _loadPlaces() async {
-    final repository = widget.repository;
-    if (repository == null) return const [];
-    return repository.getPublishedPlaces();
+  Future<List<Place>> _load() async {
+    final places = await widget.repository?.getPublishedPlaces() ?? const <Place>[];
+    return places
+        .where((place) => widget.favorites.isFavorite(place.id))
+        .toList(growable: false);
   }
-
-  void _openDetails(Place place) => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PlaceDetailsPage(
-            place: place,
-            repository: widget.repository,
-            favorites: widget.favorites,
-            routingService: widget.routingService,
-          ),
-        ),
-      );
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-        child: AnimatedBuilder(
-          animation: widget.favorites,
-          builder: (context, _) => FutureBuilder<List<Place>>(
-            future: _future,
-            builder: (context, snapshot) {
-              final places = (snapshot.data ?? const <Place>[])
-                  .where((place) => widget.favorites.contains(place.id))
-                  .toList(growable: false);
-              return RefreshIndicator(
-                onRefresh: () async => _reload(),
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
-                  physics: const AlwaysScrollableScrollPhysics(),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('المفضلة')),
+      body: FutureBuilder<List<Place>>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return const Center(child: Text('تعذر تحميل المفضلة حالياً.'));
+          }
+          final places = snapshot.data ?? const <Place>[];
+          if (places.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('المفضلة',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 5),
-                    Text('الأماكن التي حفظتها لرحلتك',
-                        style: Theme.of(context).textTheme.bodyMedium),
-                    const SizedBox(height: 20),
-                    if (snapshot.connectionState != ConnectionState.done)
-                      const Center(
-                          child: Padding(
-                              padding: EdgeInsets.all(32),
-                              child: CircularProgressIndicator()))
-                    else if (places.isEmpty)
-                      const _EmptyFavorites()
-                    else
-                      ...places.map(
-                        (place) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: PlaceCard(
-                            place: place,
-                            favorites: widget.favorites,
-                            onTap: () => _openDetails(place),
-                          ),
-                        ),
-                      ),
+                    Icon(Icons.favorite_border_rounded, size: 64),
+                    SizedBox(height: 12),
+                    Text('لم تحفظ أي معلم بعد.',
+                        style: TextStyle(fontWeight: FontWeight.w800)),
+                    SizedBox(height: 6),
+                    Text(
+                      'اضغط على رمز القلب في تفاصيل أي معلم لإضافته هنا.',
+                      textAlign: TextAlign.center,
+                    ),
                   ],
+                ),
+              ),
+            );
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: places.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final place = places[index];
+              return Card(
+                child: ListTile(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => PlaceDetailsPage(
+                        place: place,
+                        repository: widget.repository,
+                        favorites: widget.favorites,
+                        routingService: widget.routingService,
+                      ),
+                    ),
+                  ),
+                  leading: const CircleAvatar(
+                      child: Icon(Icons.place_outlined)),
+                  title: Text(place.name,
+                      style: const TextStyle(fontWeight: FontWeight.w900)),
+                  subtitle: Text('${place.category} · ${place.locationLabel}'),
+                  trailing: IconButton(
+                    onPressed: () => widget.favorites.toggle(place.id),
+                    icon: const Icon(Icons.favorite, color: Colors.red),
+                  ),
                 ),
               );
             },
-          ),
-        ),
-      );
-}
-
-class _EmptyFavorites extends StatelessWidget {
-  const _EmptyFavorites();
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 72),
-        child: Column(
-          children: [
-            Icon(Icons.favorite_border,
-                size: 58, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 14),
-            Text('لم تحفظ أي مكان بعد',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 8),
-            const Text('استخدم رمز القلب في بطاقات المعالم لتجهيز قائمة رحلتك.',
-                textAlign: TextAlign.center),
-          ],
-        ),
-      );
+          );
+        },
+      ),
+    );
+  }
 }

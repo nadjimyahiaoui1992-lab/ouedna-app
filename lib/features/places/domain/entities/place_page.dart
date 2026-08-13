@@ -3,13 +3,13 @@ import 'place.dart';
 class PlacePage {
   const PlacePage({
     required this.places,
-    required this.offset,
-    required this.limit,
+    this.hasMore = false,
+    this.offset = 0,
+    this.limit = 20,
   });
 
   final List<Place> places;
+  final bool hasMore;
   final int offset;
   final int limit;
-
-  bool get hasMore => places.length >= limit;
 }

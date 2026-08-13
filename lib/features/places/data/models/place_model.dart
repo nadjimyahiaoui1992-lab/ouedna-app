@@ -1,93 +1,72 @@
 import '../../domain/entities/place.dart';
 
 class PlaceModel extends Place {
-  const PlaceModel({
+  PlaceModel({
     required super.id,
     required super.name,
-    required super.category,
-    required super.description,
-    required super.address,
+    super.mainCategory,
     super.subCategory,
+    super.description,
+    super.address,
     super.district,
     super.municipality,
-    super.imageUrl,
-    super.rating,
+    super.phone,
+    super.mapLink,
     super.openingHours,
+    super.imageUrl,
     super.latitude,
     super.longitude,
-    super.mapLink,
-    super.phone,
-    super.website,
-    super.facebook,
-    super.instagram,
+    super.rating,
+    super.status,
     super.createdAt,
-    super.updatedAt,
   });
 
   factory PlaceModel.fromJson(Map<String, dynamic> json) {
     final rawId = json['id'];
-    final rating = json['rating'];
-    final lat = json['lat'];
-    final lng = json['lng'];
-
+    final rawLatitude = json['latitude'] ?? json['lat'];
+    final rawLongitude = json['longitude'] ?? json['lng'];
     return PlaceModel(
-      id: rawId is int ? rawId : int.tryParse('$rawId') ?? 0,
-      name: _requiredText(json['name'], 'معلم في وادي سوف'),
-      category: _requiredText(json['main_category'], 'معالم سياحية'),
-      subCategory: _optionalText(json['sub_category']),
-      description:
-          _requiredText(json['description'], 'لا يتوفر وصف لهذا المكان بعد.'),
-      address: _requiredText(json['address'], 'وادي سوف، الجزائر'),
-      district: _optionalText(json['district']),
-      municipality: _optionalText(json['municipality']),
-      imageUrl: _optionalText(json['image_url']),
-      rating: rating is num ? rating.toDouble() : double.tryParse('$rating'),
-      openingHours: _optionalText(json['opening_hours']),
-      latitude: lat is num ? lat.toDouble() : double.tryParse('$lat'),
-      longitude: lng is num ? lng.toDouble() : double.tryParse('$lng'),
-      mapLink: _optionalText(json['map_link']),
-      phone: _optionalText(json['phone']),
-      website: _optionalText(json['website']),
-      facebook: _optionalText(json['facebook']),
-      instagram: _optionalText(json['instagram']),
-      createdAt: _optionalDate(json['created_at']),
-      updatedAt: _optionalDate(json['updated_at']),
+      id: rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '') ?? 0,
+      name: json['name']?.toString() ?? '',
+      mainCategory: json['main_category']?.toString() ?? json['category']?.toString(),
+      subCategory: json['sub_category']?.toString(),
+      description: json['description']?.toString(),
+      address: json['address']?.toString(),
+      district: json['district']?.toString(),
+      municipality: json['municipality']?.toString(),
+      phone: json['phone']?.toString(),
+      mapLink: json['map_link']?.toString(),
+      openingHours: json['opening_hours']?.toString(),
+      imageUrl: json['image_url']?.toString(),
+      latitude: (rawLatitude as num?)?.toDouble(),
+      longitude: (rawLongitude as num?)?.toDouble(),
+      rating: (json['rating'] as num?)?.toDouble(),
+      status: json['status']?.toString(),
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'].toString())
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
-        'main_category': category,
+        'main_category': mainCategory,
         'sub_category': subCategory,
         'description': description,
         'address': address,
         'district': district,
         'municipality': municipality,
-        'image_url': imageUrl,
-        'rating': rating,
+        'phone': phone,
+        'map_link': mapLink,
         'opening_hours': openingHours,
+        'image_url': imageUrl,
+        'latitude': latitude,
+        'longitude': longitude,
         'lat': latitude,
         'lng': longitude,
-        'map_link': mapLink,
-        'phone': phone,
-        'website': website,
-        'facebook': facebook,
-        'instagram': instagram,
-        'created_at': createdAt?.toIso8601String(),
-        'updated_at': updatedAt?.toIso8601String(),
+        'rating': rating,
+        'status': status,
+        'created_at': createdAt.toIso8601String(),
       };
-
-  static String _requiredText(Object? value, String fallback) =>
-      _optionalText(value) ?? fallback;
-
-  static String? _optionalText(Object? value) {
-    final text = value?.toString().trim();
-    return text == null || text.isEmpty ? null : text;
-  }
-
-  static DateTime? _optionalDate(Object? value) {
-    final text = _optionalText(value);
-    return text == null ? null : DateTime.tryParse(text);
-  }
 }

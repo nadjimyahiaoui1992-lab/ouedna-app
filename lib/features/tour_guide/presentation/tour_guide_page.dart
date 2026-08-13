@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
-import '../domain/entities/tour_guide_answer.dart';
 import '../domain/repositories/tour_guide_repository.dart';
 
 class TourGuidePage extends StatefulWidget {
@@ -19,7 +18,7 @@ class _TourGuidePageState extends State<TourGuidePage> {
   final _messages = <_ChatMessage>[
     const _ChatMessage(
       text:
-          'مرحباً، أنا المساعد الذكي في سوف 360. أساعدك في إعداد زيارة مميزة لوادي سوف عبر اقتراح مسارات ومعلومات ثقافية ونصائح عملية من المعالم المنشورة.',
+          'مرحباً، أنا مساعدك الذكي في "وادنا". أساعدك في استكشاف كنوز وادي سوف، واقتراح مسارات سياحية ومعلومات ثقافية ونصائح عملية لرحلتك.',
       isUser: false,
     ),
   ];
@@ -51,16 +50,14 @@ class _TourGuidePageState extends State<TourGuidePage> {
         if (!mounted) return;
         setState(() => _isListening = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('تعذر استخدام الإملاء الصوتي: ${error.errorMsg}')),
+          SnackBar(content: Text('تعذر استخدام الإملاء الصوتي: ${error.errorMsg}')),
         );
       },
     );
     if (!available) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('التعرّف الصوتي غير متاح على هذا الجهاز.')),
+          const SnackBar(content: Text('التعرّف الصوتي غير متاح على هذا الجهاز.')),
         );
       }
       return;
@@ -81,8 +78,7 @@ class _TourGuidePageState extends State<TourGuidePage> {
         if (!mounted || result.recognizedWords.trim().isEmpty) return;
         _controller.value = TextEditingValue(
           text: result.recognizedWords,
-          selection:
-              TextSelection.collapsed(offset: result.recognizedWords.length),
+          selection: TextSelection.collapsed(offset: result.recognizedWords.length),
         );
       },
       listenOptions: stt.SpeechListenOptions(
@@ -117,7 +113,7 @@ class _TourGuidePageState extends State<TourGuidePage> {
       final answer = await repository.ask(question: question);
       if (!mounted) return;
       setState(
-          () => _messages.add(_ChatMessage(answer: answer, isUser: false)));
+          () => _messages.add(_ChatMessage(text: answer, isUser: false)));
     } catch (_) {
       if (!mounted) return;
       setState(
@@ -207,14 +203,9 @@ class _TourGuidePageState extends State<TourGuidePage> {
                   ),
                   const SizedBox(width: 8),
                   IconButton.outlined(
-                    tooltip: _isListening
-                        ? 'إيقاف الإملاء الصوتي'
-                        : 'استخدام الإملاء الصوتي',
-                    onPressed:
-                        isAvailable && !_isSending ? _toggleVoiceInput : null,
-                    icon: Icon(_isListening
-                        ? Icons.mic_rounded
-                        : Icons.mic_none_rounded),
+                    tooltip: _isListening ? 'إيقاف الإملاء الصوتي' : 'استخدام الإملاء الصوتي',
+                    onPressed: isAvailable && !_isSending ? _toggleVoiceInput : null,
+                    icon: Icon(_isListening ? Icons.mic_rounded : Icons.mic_none_rounded),
                   ),
                   const SizedBox(width: 8),
                   IconButton.filled(
@@ -233,11 +224,9 @@ class _TourGuidePageState extends State<TourGuidePage> {
 }
 
 class _ChatMessage {
-  const _ChatMessage(
-      {this.text, this.answer, required this.isUser, this.isError = false});
+  const _ChatMessage({required this.text, required this.isUser, this.isError = false});
 
-  final String? text;
-  final TourGuideAnswer? answer;
+  final String text;
   final bool isUser;
   final bool isError;
 }
@@ -251,8 +240,7 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isUser = message.isUser;
-    final answer = message.answer;
-    final text = answer?.answer ?? message.text ?? '';
+    final text = message.text;
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -284,22 +272,6 @@ class _MessageBubble extends StatelessWidget {
                     height: 1.35,
                   ),
                 ),
-                if (answer?.suggestions.isNotEmpty == true) ...[
-                  const SizedBox(height: 10),
-                  ...answer!.suggestions.map(
-                    (suggestion) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text('• $suggestion'),
-                    ),
-                  ),
-                ],
-                if (answer?.disclaimer?.isNotEmpty == true) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    answer!.disclaimer!,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
               ],
             ),
           ),
@@ -344,7 +316,7 @@ class _GuideHero extends StatelessWidget {
                     Text(
                       isAvailable
                           ? 'اسأل عن المعالم وبرامج الزيارة والنصائح العملية.'
-                          : 'يتطلب المساعد اتصالاً آمناً بخدمة Souf360.',
+                          : 'يتطلب المساعد اتصالاً آمناً بخدمة وادنا.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],

@@ -1,34 +1,23 @@
 import 'package:latlong2/latlong.dart';
-
-enum TravelMode {
-  car,
-  foot,
-  bike;
-
-  String get apiProfile => switch (this) {
-        TravelMode.car => 'car',
-        TravelMode.foot => 'foot',
-        TravelMode.bike => 'bike',
-      };
-
+enum TravelMode { car, foot, bike }
+extension TravelModeExt on TravelMode {
   String get label => switch (this) {
         TravelMode.car => 'سيارة',
         TravelMode.foot => 'مشياً',
         TravelMode.bike => 'دراجة',
       };
+  String get apiProfile => switch (this) {
+        TravelMode.car => 'driving',
+        TravelMode.foot => 'walking',
+        TravelMode.bike => 'cycling',
+      };
 }
-
 class RoutePoint {
   const RoutePoint({required this.latitude, required this.longitude});
-
   final double latitude;
   final double longitude;
-
-  LatLng get latLng => LatLng(latitude, longitude);
-
-  Map<String, num> toJson() => {'lat': latitude, 'lng': longitude};
+  Map<String, dynamic> toJson() => {'lat': latitude, 'lng': longitude};
 }
-
 class RouteStep {
   const RouteStep({
     required this.distanceMeters,
@@ -37,14 +26,12 @@ class RouteStep {
     required this.endGeometryIndex,
     this.streetName,
   });
-
   final double distanceMeters;
   final double durationSeconds;
   final String maneuver;
   final int endGeometryIndex;
   final String? streetName;
 }
-
 class RouteOption {
   const RouteOption({
     required this.distanceMeters,
@@ -52,31 +39,25 @@ class RouteOption {
     required this.geometry,
     required this.steps,
   });
-
   final double distanceMeters;
   final double durationSeconds;
   final List<LatLng> geometry;
   final List<RouteStep> steps;
 }
-
 class RoutingResult {
   const RoutingResult({
     required this.origin,
     required this.destination,
     required this.routes,
   });
-
   final RoutePoint origin;
   final RoutePoint destination;
   final List<RouteOption> routes;
 }
-
 class RoutingException implements Exception {
   const RoutingException(this.message, {this.isConfigurationError = false});
-
   final String message;
   final bool isConfigurationError;
-
   @override
   String toString() => message;
 }

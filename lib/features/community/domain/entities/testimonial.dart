@@ -1,15 +1,20 @@
+import 'dart:typed_data';
+class ExperiencePhoto {
+  const ExperiencePhoto({required this.bytes, required this.fileName});
+  final Uint8List bytes;
+  final String fileName;
+}
 class Testimonial {
   const Testimonial({
     required this.id,
-    required this.message,
-    required this.photoUrls,
     this.name,
-    this.createdAt,
+    required this.message,
+    required this.photos,
+    required this.createdAt,
   });
-
   final int id;
   final String? name;
   final String message;
-  final List<String> photoUrls;
-  final DateTime? createdAt;
+  final List<String> photos;
+  final DateTime createdAt;
 }

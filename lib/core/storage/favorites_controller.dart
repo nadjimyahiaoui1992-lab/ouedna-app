@@ -1,34 +1,35 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 class FavoritesController extends ChangeNotifier {
   FavoritesController(this._preferences) {
-    _ids = _preferences
-            .getStringList(_key)
-            ?.map(int.tryParse)
-            .whereType<int>()
-            .toSet() ??
-        <int>{};
+    _load();
   }
-
   final SharedPreferences _preferences;
-  static const _key = 'souf360.favorite_place_ids.v1';
-  late Set<int> _ids;
-
-  Set<int> get ids => Set.unmodifiable(_ids);
-
-  bool contains(int placeId) => _ids.contains(placeId);
-
-  Future<void> toggle(int placeId) async {
-    if (_ids.contains(placeId)) {
-      _ids = {..._ids}..remove(placeId);
-    } else {
-      _ids = {..._ids, placeId};
+  static const _key = 'ouedna_favorites';
+  final Set<int> _favorites = {};
+  Set<int> get favorites => Set.unmodifiable(_favorites);
+  void _load() {
+    final list = _preferences.getStringList(_key);
+    if (list != null) {
+      _favorites.clear();
+      for (final item in list) {
+        final id = int.tryParse(item);
+        if (id != null) _favorites.add(id);
+      }
     }
+  }
+  bool isFavorite(int placeId) => _favorites.contains(placeId);
+  bool contains(int placeId) => isFavorite(placeId);
+  Future<void> toggle(int placeId) async {
+    if (_favorites.contains(placeId)) {
+      _favorites.remove(placeId);
+    } else {
+      _favorites.add(placeId);
+    }
+    notifyListeners();
     await _preferences.setStringList(
       _key,
-      _ids.map((id) => '$id').toList(growable: false),
+      _favorites.map((e) => e.toString()).toList(),
     );
-    notifyListeners();
   }
 }

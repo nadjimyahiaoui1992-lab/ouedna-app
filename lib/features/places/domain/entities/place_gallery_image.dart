@@ -5,11 +5,10 @@ class PlaceGalleryImage {
     required this.imageUrl,
     this.title,
     this.description,
-    this.isCover = false,
-    this.sortOrder = 0,
+    required this.isCover,
+    required this.sortOrder,
   });
-
-  final String id;
+  final int id;
   final int placeId;
   final String imageUrl;
   final String? title;
