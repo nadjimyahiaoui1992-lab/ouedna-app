@@ -12,6 +12,7 @@ import '../features/community/presentation/community_page.dart';
 import '../features/favorites/presentation/favorites_page.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/map/presentation/souf_map_page.dart';
+import '../features/notifications/data/ouedna_notification_service.dart';
 import '../features/places/domain/repositories/place_repository.dart';
 import '../features/places/presentation/place_details_page.dart';
 import '../features/places/presentation/places_page.dart';
@@ -50,6 +51,7 @@ class _OuednaAppState extends State<OuednaApp> {
   final _navigatorKey = GlobalKey<NavigatorState>();
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
+  StreamSubscription<void>? _updateActionSubscription;
   var _selectedIndex = 0;
   var _themeMode = ThemeMode.system;
   var _showWelcome = true;
@@ -59,12 +61,34 @@ class _OuednaAppState extends State<OuednaApp> {
   void initState() {
     super.initState();
     _listenForDeepLinks();
+    _initializeNotifications();
   }
 
   @override
   void dispose() {
     _linkSubscription?.cancel();
+    _updateActionSubscription?.cancel();
+    OuednaNotificationService.instance.dispose();
     super.dispose();
+  }
+
+  Future<void> _initializeNotifications() async {
+    final service = OuednaNotificationService.instance;
+    await service.initialize(widget.languageController);
+    if (!mounted) return;
+    _updateActionSubscription = service.updateActions.listen((_) {
+      _openUpdateCenter();
+    });
+  }
+
+  void _openUpdateCenter() {
+    if (!mounted) return;
+    if (_showWelcome) setState(() => _showWelcome = false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _navigatorKey.currentState?.push(
+        MaterialPageRoute(builder: (_) => const UpdateCenterPage()),
+      );
+    });
   }
 
   Future<void> _listenForDeepLinks() async {
@@ -166,9 +190,7 @@ class _OuednaAppState extends State<OuednaApp> {
             FilledButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
-                _navigatorKey.currentState?.push(
-                  MaterialPageRoute(builder: (_) => const UpdateCenterPage()),
-                );
+                _openUpdateCenter();
               },
               child: Text(strings.text('view_update')),
             ),
@@ -277,12 +299,7 @@ class _OuednaAppState extends State<OuednaApp> {
                                           ),
                                         );
                                       } else {
-                                        _navigatorKey.currentState?.push(
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                const UpdateCenterPage(),
-                                          ),
-                                        );
+                                        _openUpdateCenter();
                                       }
                                     },
                                     itemBuilder: (_) => [
