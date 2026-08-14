@@ -24,6 +24,7 @@ jobs:
     timeout-minutes: 35
     env:
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
       OUEDNA_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       OUEDNA_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       OUEDNA_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
@@ -51,6 +52,7 @@ jobs:
       - name: Validate release secrets
         run: |
           test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$GOOGLE_SERVICES_JSON_BASE64"
           test -n "$OUEDNA_KEY_ALIAS"
           test -n "$OUEDNA_KEY_PASSWORD"
           test -n "$OUEDNA_STORE_PASSWORD"
@@ -62,6 +64,12 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$OUEDNA_KEYSTORE_PATH"
           test -s "$OUEDNA_KEYSTORE_PATH"
           chmod 600 "$OUEDNA_KEYSTORE_PATH"
+
+      - name: Restore Firebase Android configuration
+        run: |
+          printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
+          test -s android/app/google-services.json
+          chmod 600 android/app/google-services.json
 
       - name: Resolve dependencies and test
         run: |
