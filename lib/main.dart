@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/souf_tour_app.dart';
+import 'core/analytics/app_metrics_service.dart';
 import 'core/config/app_config.dart';
 import 'core/localization/ouedna_localization.dart';
 import 'core/storage/favorites_controller.dart';
@@ -51,6 +53,13 @@ Future<void> main() async {
   final RoutingService routingService = OsrmRoutingService();
 
   try {
+    await Firebase.initializeApp();
+  } catch (_) {
+    // Firebase Analytics et les notifications restent optionnels lorsque la
+    // configuration Android Firebase n'est pas encore incluse.
+  }
+
+  try {
     await Supabase.initialize(
       url: AppConfig.supabaseUrl,
       publishableKey: AppConfig.supabasePublishableKey,
@@ -63,6 +72,11 @@ Future<void> main() async {
     );
     communityRepository = SupabaseCommunityRepository(client);
     tourGuideRepository = SupabaseTourGuideRepository(client);
+    unawaited(
+      AppMetricsService(preferences: preferences, client: client).recordStartup(
+        localeCode: languageController.language.code,
+      ),
+    );
   } catch (_) {}
 
   runApp(
