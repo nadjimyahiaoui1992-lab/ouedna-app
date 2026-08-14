@@ -6,7 +6,7 @@ const maxQuestionLength = 500;
 const maxRequestsPerWindow = 12;
 const windowSeconds = 600;
 const fallbackDisclaimer =
-  "تعتمد الاقتراحات على المعالم المنشورة في Algeria 360 AI و Souf360؛ تأكد من تفاصيل الرحلة قبل الانطلاق.";
+  "تعتمد الاقتراحات على المعالم المنشورة في وادنا؛ تأكد من تفاصيل الرحلة قبل الانطلاق.";
 
 type GuidePayload = {
   question?: unknown;
