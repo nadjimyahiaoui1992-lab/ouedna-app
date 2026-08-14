@@ -4,6 +4,22 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// Les identifiants de signature ne sont jamais enregistrés dans Git.
+// Les builds locaux et CI lisent exclusivement ces variables :
+// OUEDNA_KEYSTORE_PATH, OUEDNA_KEY_ALIAS,
+// OUEDNA_STORE_PASSWORD et OUEDNA_KEY_PASSWORD.
+def releaseStorePath = System.getenv("OUEDNA_KEYSTORE_PATH")
+def releaseKeyAlias = System.getenv("OUEDNA_KEY_ALIAS")
+def releaseStorePassword = System.getenv("OUEDNA_STORE_PASSWORD")
+def releaseKeyPassword = System.getenv("OUEDNA_KEY_PASSWORD")
+def hasReleaseSigning = [
+    releaseStorePath,
+    releaseKeyAlias,
+    releaseStorePassword,
+    releaseKeyPassword,
+].every { value -> value != null && !value.trim().isEmpty() }
+def splitPerAbi = project.findProperty("split-per-abi")?.toBoolean() ?: false
+
 android {
     namespace = "com.ouedna.app"
     compileSdk = 35
@@ -20,10 +36,21 @@ android {
 
     defaultConfig {
         applicationId = "com.ouedna.app"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 21
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile = file(releaseStorePath)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
 
     flavorDimensions += "distribution"
@@ -36,9 +63,72 @@ android {
         }
     }
 
+    splits {
+        abi {
+            // --split-per-abi active ces sorties optimisées. Sans ce drapeau,
+            // Flutter produit un APK universel pour les vérifications rapides.
+            enable splitPerAbi
+            reset()
+            include "arm64-v8a", "armeabi-v7a"
+            universalApk false
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.debug
+            if (!hasReleaseSigning) {
+                throw new GradleException(
+                    "La signature release exige OUEDNA_KEYSTORE_PATH, OUEDNA_KEY_ALIAS, " +
+                    "OUEDNA_STORE_PASSWORD et OUEDNA_KEY_PASSWORD."
+                )
+            }
+            signingConfig = signingConfigs.release
+        }
+    }
+
+}
+
+// Flutter 3.24 recherche les APK split dans l’ordre flavor/ABI, tandis que
+// son propre plugin les copie dans l’ordre ABI/flavor. Ces alias empêchent
+// l’échec artificiel de `flutter build apk --split-per-abi` sans modifier
+// les APK produits ni les architectures publiées.
+afterEvaluate {
+    if (splitPerAbi) {
+        android.applicationVariants.all { variant ->
+            def flavor = variant.flavorName?.toLowerCase()
+            def mode = variant.buildType.name
+            def taskName = "assemble${variant.name.capitalize()}"
+            tasks.named(taskName).configure {
+                doLast {
+                    ["arm64-v8a", "armeabi-v7a"].each { abi ->
+                        def source = file("$buildDir/outputs/flutter-apk/app-${abi}-${flavor}-${mode}.apk")
+                        if (source.exists()) {
+                            copy {
+                                from source
+                                into file("$buildDir/outputs/flutter-apk")
+                                rename { "app-${flavor}-${abi}-${mode}.apk" }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Le projet utilise deux flavors. Flutter déclenche assembleRelease
+    // lorsqu’aucune flavor n’est fournie et attend app-release.apk; l’APK Play
+    // signé sert alors d’artefact de vérification neutre, sans installer le
+    // canal de mise à jour directe.
+    tasks.named("assembleRelease").configure {
+        doLast {
+            def playApk = file("$buildDir/outputs/flutter-apk/app-play-release.apk")
+            if (playApk.exists()) {
+                copy {
+                    from playApk
+                    into file("$buildDir/outputs/flutter-apk")
+                    rename { "app-release.apk" }
+                }
+            }
         }
     }
 }

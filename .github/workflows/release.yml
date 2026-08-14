@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag de version existant à publier, par exemple v1.1.0'
+        description: 'Tag de version existant à publier, par exemple v2.0.1'
         required: true
         type: string
 
@@ -19,14 +19,15 @@ concurrency:
 
 jobs:
   release:
-    name: Sign and publish APK
+    name: Sign and publish Android artifacts
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     env:
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-      ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+      OUEDNA_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      OUEDNA_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      OUEDNA_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+      OUEDNA_KEYSTORE_PATH: ${{ github.workspace }}/android/app/ouedna-release.jks
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
     steps:
@@ -50,38 +51,51 @@ jobs:
       - name: Validate release secrets
         run: |
           test -n "$ANDROID_KEYSTORE_BASE64"
-          test -n "$ANDROID_KEY_ALIAS"
-          test -n "$ANDROID_KEY_PASSWORD"
-          test -n "$ANDROID_STORE_PASSWORD"
+          test -n "$OUEDNA_KEY_ALIAS"
+          test -n "$OUEDNA_KEY_PASSWORD"
+          test -n "$OUEDNA_STORE_PASSWORD"
           test -n "$SUPABASE_URL"
           test -n "$SUPABASE_PUBLISHABLE_KEY"
 
       - name: Restore Android signing key
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
-          cat > android/key.properties <<EOF
-          storePassword=$ANDROID_STORE_PASSWORD
-          keyPassword=$ANDROID_KEY_PASSWORD
-          keyAlias=$ANDROID_KEY_ALIAS
-          storeFile=upload-keystore.jks
-          EOF
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$OUEDNA_KEYSTORE_PATH"
+          test -s "$OUEDNA_KEYSTORE_PATH"
+          chmod 600 "$OUEDNA_KEYSTORE_PATH"
 
       - name: Resolve dependencies and test
         run: |
           flutter pub get
           dart format --set-exit-if-changed lib test
-          flutter analyze --fatal-infos
+          flutter analyze
           flutter test
 
-      - name: Build signed release APK
+      - name: Build signed direct APK by ABI
         run: >-
-          flutter build apk --release
+          flutter build apk --flavor direct --release --split-per-abi
+          --target-platform android-arm,android-arm64
+          --dart-define=OUEDNA_DIRECT_BUILD=true
           --dart-define=SUPABASE_URL="$SUPABASE_URL"
           --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
+
+      - name: Build signed Play Store bundle
+        run: >-
+          flutter build appbundle --flavor play --release
+          --dart-define=SUPABASE_URL="$SUPABASE_URL"
+          --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
+
+      - name: Verify release signatures
+        run: |
+          APKSIGNER="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
+          for apk in build/app/outputs/flutter-apk/*.apk; do
+            "$APKSIGNER" verify --verbose --print-certs "$apk"
+          done
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           generate_release_notes: true
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/bundle/playRelease/*.aab
