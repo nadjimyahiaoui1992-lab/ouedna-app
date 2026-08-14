@@ -1,19 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeadersFor, trustedClientKey } from "../_shared/publicEndpoint.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+const deviceTokenPattern = /^[A-Za-z0-9:_-]{32,4096}$/;
 
 Deno.serve(async (request) => {
+  const corsHeaders = corsHeadersFor(request);
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: corsHeaders });
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
@@ -28,7 +22,7 @@ Deno.serve(async (request) => {
       ? body.app_version.trim().slice(0, 48)
       : null;
 
-    if (token.length < 32 || token.length > 4096) {
+    if (!deviceTokenPattern.test(token)) {
       return json({ error: "invalid_device_token" }, 400);
     }
 
@@ -41,6 +35,18 @@ Deno.serve(async (request) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+    const { data: permitted, error: rateLimitError } = await supabase.rpc(
+      "consume_public_endpoint_request",
+      {
+        p_scope: "push-device-registration",
+        p_client_key: await trustedClientKey(request),
+        p_window_seconds: 3600,
+        p_max_requests: 30,
+      },
+    );
+    if (rateLimitError || permitted !== true) {
+      return json({ error: "rate_limited", retry_after_seconds: 3600 }, 429);
+    }
     const { error } = await supabase.from("push_devices").upsert(
       {
         token,

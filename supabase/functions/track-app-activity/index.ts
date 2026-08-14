@@ -1,22 +1,14 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+import { corsHeadersFor, trustedClientKey } from "../_shared/publicEndpoint.ts";
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (request) => {
+  const corsHeaders = corsHeadersFor(request);
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: corsHeaders });
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -51,6 +43,18 @@ Deno.serve(async (request) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+    const { data: permitted, error: rateLimitError } = await supabase.rpc(
+      "consume_public_endpoint_request",
+      {
+        p_scope: "app-activity",
+        p_client_key: await trustedClientKey(request),
+        p_window_seconds: 3600,
+        p_max_requests: 120,
+      },
+    );
+    if (rateLimitError || permitted !== true) {
+      return json({ error: "rate_limited", retry_after_seconds: 3600 }, 429);
+    }
     const now = new Date().toISOString();
     const activityDate = now.slice(0, 10);
 

@@ -1,4 +1,0 @@
-{
-  "project_id": "cwbenhuiextfoiyfboxo",
-  "query": "SELECT routine_definition FROM information_schema.routines WHERE routine_name = 'consume_tour_guide_request';"
-}

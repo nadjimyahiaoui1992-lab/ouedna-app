@@ -13,7 +13,7 @@ class SupabaseTourGuideRepository implements TourGuideRepository {
     }
     try {
       final response = await _client.functions.invoke(
-        'tour-guide-ai',
+        'tour-guide',
         body: {'question': clean},
       );
       final data = response.data;

@@ -63,9 +63,10 @@ Deno.serve(async (request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data: permitted, error: rateLimitError } = await serviceClient.rpc(
-    "consume_tour_guide_request",
+    "consume_public_endpoint_request",
     {
-      p_user_id: userData.user.id,
+      p_scope: "routing",
+      p_client_key: `user:${userData.user.id}`,
       p_window_seconds: windowSeconds,
       p_max_requests: maxRequestsPerWindow,
     },
