@@ -28,7 +28,8 @@ class PlaceModel extends Place {
     return PlaceModel(
       id: rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '') ?? 0,
       name: json['name']?.toString() ?? '',
-      mainCategory: json['main_category']?.toString() ?? json['category']?.toString(),
+      mainCategory:
+          json['main_category']?.toString() ?? json['category']?.toString(),
       subCategory: json['sub_category']?.toString(),
       description: json['description']?.toString(),
       address: json['address']?.toString(),

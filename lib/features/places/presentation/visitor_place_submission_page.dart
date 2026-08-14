@@ -17,7 +17,8 @@ class VisitorPlaceSubmissionPage extends StatefulWidget {
       _VisitorPlaceSubmissionPageState();
 }
 
-class _VisitorPlaceSubmissionPageState extends State<VisitorPlaceSubmissionPage> {
+class _VisitorPlaceSubmissionPageState
+    extends State<VisitorPlaceSubmissionPage> {
   static const _elOued = LatLng(33.3683, 6.8674);
   static const _categories = <String>[
     'معلم طبيعي',
@@ -78,7 +79,8 @@ class _VisitorPlaceSubmissionPageState extends State<VisitorPlaceSubmissionPage>
     if (!_formKey.currentState!.validate()) return;
     if (_point == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى تحديد موقع المعلم بالدبوس على الخريطة.')),
+        const SnackBar(
+            content: Text('يرجى تحديد موقع المعلم بالدبوس على الخريطة.')),
       );
       return;
     }
@@ -123,7 +125,8 @@ class _VisitorPlaceSubmissionPageState extends State<VisitorPlaceSubmissionPage>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('تعذر إرسال الاقتراح حالياً. تحقق من اتصال الإنترنت وحاول مجدداً.'),
+          content: Text(
+              'تعذر إرسال الاقتراح حالياً. تحقق من اتصال الإنترنت وحاول مجدداً.'),
         ),
       );
     } finally {
@@ -135,7 +138,7 @@ class _VisitorPlaceSubmissionPageState extends State<VisitorPlaceSubmissionPage>
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('اقترح معلماً')), 
+      appBar: AppBar(title: const Text('اقترح معلماً')),
       body: SafeArea(
         top: false,
         child: Form(
@@ -157,7 +160,8 @@ class _VisitorPlaceSubmissionPageState extends State<VisitorPlaceSubmissionPage>
                       Expanded(
                         child: Text(
                           'شاركنا مكاناً موثوقاً في وادي سوف. لا يُنشر أي اقتراح قبل المراجعة من فريق الإدارة.',
-                          style: TextStyle(fontWeight: FontWeight.w700, height: 1.45),
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700, height: 1.45),
                         ),
                       ),
                     ],
@@ -176,11 +180,14 @@ class _VisitorPlaceSubmissionPageState extends State<VisitorPlaceSubmissionPage>
               DropdownButtonFormField<String>(
                 value: _category,
                 isExpanded: true,
-                decoration: _decoration('التصنيف الرئيسي', Icons.category_outlined),
+                decoration:
+                    _decoration('التصنيف الرئيسي', Icons.category_outlined),
                 items: _categories
-                    .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+                    .map((item) =>
+                        DropdownMenuItem(value: item, child: Text(item)))
                     .toList(growable: false),
-                onChanged: (value) => setState(() => _category = value ?? _category),
+                onChanged: (value) =>
+                    setState(() => _category = value ?? _category),
               ),
               const SizedBox(height: 14),
               _InputField(
@@ -222,17 +229,23 @@ class _VisitorPlaceSubmissionPageState extends State<VisitorPlaceSubmissionPage>
               _SectionTitle('صورة المكان'),
               OutlinedButton.icon(
                 onPressed: _pickImage,
-                icon: Icon(_image == null ? Icons.add_photo_alternate_outlined : Icons.photo_outlined),
-                label: Text(_image == null ? 'إضافة صورة من المعرض' : 'تم اختيار: ${_image!.name}'),
+                icon: Icon(_image == null
+                    ? Icons.add_photo_alternate_outlined
+                    : Icons.photo_outlined),
+                label: Text(_image == null
+                    ? 'إضافة صورة من المعرض'
+                    : 'تم اختيار: ${_image!.name}'),
                 style: OutlinedButton.styleFrom(
                   alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
               ),
               const SizedBox(height: 12),
               const Text(
                 'بإرسال الاقتراح، تؤكد أن المعلومات والصورة صحيحة وأنك تملك حق مشاركتها.',
-                style: TextStyle(color: Colors.black54, fontSize: 12, height: 1.4),
+                style:
+                    TextStyle(color: Colors.black54, fontSize: 12, height: 1.4),
               ),
             ],
           ),
@@ -248,7 +261,8 @@ class _VisitorPlaceSubmissionPageState extends State<VisitorPlaceSubmissionPage>
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
                   )
                 : const Icon(Icons.send_outlined),
             label: Text(_sending ? 'جاري الإرسال...' : 'إرسال للمراجعة'),
@@ -262,7 +276,10 @@ class _VisitorPlaceSubmissionPageState extends State<VisitorPlaceSubmissionPage>
         labelText: label,
         prefixIcon: Icon(icon),
         filled: true,
-        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(.45),
+        fillColor: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withOpacity(.45),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       );
 }
@@ -276,7 +293,10 @@ class _SectionTitle extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 10),
         child: Text(
           value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(fontWeight: FontWeight.w900),
         ),
       );
 }
@@ -307,13 +327,18 @@ class _InputField extends StatelessWidget {
         maxLines: maxLines,
         keyboardType: keyboardType,
         validator: required
-            ? (value) => value == null || value.trim().isEmpty ? 'هذا الحقل مطلوب.' : null
+            ? (value) => value == null || value.trim().isEmpty
+                ? 'هذا الحقل مطلوب.'
+                : null
             : null,
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon),
           filled: true,
-          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(.45),
+          fillColor: Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest
+              .withOpacity(.45),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
         ),
       );
@@ -340,7 +365,8 @@ class _LocationCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('دبوس الموقع', style: TextStyle(fontWeight: FontWeight.w900)),
+                    const Text('دبوس الموقع',
+                        style: TextStyle(fontWeight: FontWeight.w900)),
                     const SizedBox(height: 3),
                     Text(
                       point == null
@@ -351,7 +377,9 @@ class _LocationCard extends StatelessWidget {
                   ],
                 ),
               ),
-              FilledButton(onPressed: onTap, child: Text(point == null ? 'تحديد' : 'تعديل')),
+              FilledButton(
+                  onPressed: onTap,
+                  child: Text(point == null ? 'تحديد' : 'تعديل')),
             ],
           ),
         ),
@@ -376,7 +404,9 @@ class _VisitorMapPickerState extends State<_VisitorMapPicker> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, _point),
-              child: const Text('تأكيد', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+              child: const Text('تأكيد',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w900)),
             ),
           ],
         ),
@@ -399,7 +429,8 @@ class _VisitorMapPickerState extends State<_VisitorMapPicker> {
                       point: _point,
                       width: 56,
                       height: 56,
-                      child: const Icon(Icons.location_on_rounded, color: Color(0xFFB63D32), size: 50),
+                      child: const Icon(Icons.location_on_rounded,
+                          color: Color(0xFFB63D32), size: 50),
                     ),
                   ],
                 ),
@@ -415,7 +446,10 @@ class _VisitorMapPickerState extends State<_VisitorMapPicker> {
                   child: Text(
                     'اضغط على الخريطة لوضع الدبوس بدقة، ثم اضغط «تأكيد».',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
               ),

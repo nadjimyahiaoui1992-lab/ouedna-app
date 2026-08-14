@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 class AppTheme {
   static const primaryColor = Color(0xFF163F3A);
   static const secondaryColor = Color(0xFFE5B65A);
@@ -34,11 +35,13 @@ class AppTheme {
           backgroundColor: primaryColor,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
     );
   }
+
   static ThemeData dark() {
     return ThemeData(
       useMaterial3: true,

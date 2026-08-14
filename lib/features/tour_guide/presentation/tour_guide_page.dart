@@ -50,14 +50,16 @@ class _TourGuidePageState extends State<TourGuidePage> {
         if (!mounted) return;
         setState(() => _isListening = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر استخدام الإملاء الصوتي: ${error.errorMsg}')),
+          SnackBar(
+              content: Text('تعذر استخدام الإملاء الصوتي: ${error.errorMsg}')),
         );
       },
     );
     if (!available) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('التعرّف الصوتي غير متاح على هذا الجهاز.')),
+          const SnackBar(
+              content: Text('التعرّف الصوتي غير متاح على هذا الجهاز.')),
         );
       }
       return;
@@ -78,7 +80,8 @@ class _TourGuidePageState extends State<TourGuidePage> {
         if (!mounted || result.recognizedWords.trim().isEmpty) return;
         _controller.value = TextEditingValue(
           text: result.recognizedWords,
-          selection: TextSelection.collapsed(offset: result.recognizedWords.length),
+          selection:
+              TextSelection.collapsed(offset: result.recognizedWords.length),
         );
       },
       listenOptions: stt.SpeechListenOptions(
@@ -112,8 +115,7 @@ class _TourGuidePageState extends State<TourGuidePage> {
     try {
       final answer = await repository.ask(question: question);
       if (!mounted) return;
-      setState(
-          () => _messages.add(_ChatMessage(text: answer, isUser: false)));
+      setState(() => _messages.add(_ChatMessage(text: answer, isUser: false)));
     } catch (_) {
       if (!mounted) return;
       setState(
@@ -203,9 +205,14 @@ class _TourGuidePageState extends State<TourGuidePage> {
                   ),
                   const SizedBox(width: 8),
                   IconButton.outlined(
-                    tooltip: _isListening ? 'إيقاف الإملاء الصوتي' : 'استخدام الإملاء الصوتي',
-                    onPressed: isAvailable && !_isSending ? _toggleVoiceInput : null,
-                    icon: Icon(_isListening ? Icons.mic_rounded : Icons.mic_none_rounded),
+                    tooltip: _isListening
+                        ? 'إيقاف الإملاء الصوتي'
+                        : 'استخدام الإملاء الصوتي',
+                    onPressed:
+                        isAvailable && !_isSending ? _toggleVoiceInput : null,
+                    icon: Icon(_isListening
+                        ? Icons.mic_rounded
+                        : Icons.mic_none_rounded),
                   ),
                   const SizedBox(width: 8),
                   IconButton.filled(
@@ -224,7 +231,8 @@ class _TourGuidePageState extends State<TourGuidePage> {
 }
 
 class _ChatMessage {
-  const _ChatMessage({required this.text, required this.isUser, this.isError = false});
+  const _ChatMessage(
+      {required this.text, required this.isUser, this.isError = false});
 
   final String text;
   final bool isUser;

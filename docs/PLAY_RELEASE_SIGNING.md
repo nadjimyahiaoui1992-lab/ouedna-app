@@ -1,4 +1,4 @@
-# توقيع Souf 360 للإصدار على Google Play
+# توقيع Ouedna للإصدار على Google Play
 
 إعدادات Gradle في المشروع تمنع الآن أي استخدام صامت لشهادة Android Debug في إصدار `release`. بقيت **مادة التوقيع** خارج المستودع وضمن مسؤولية مالك المشروع؛ وهي لا تُرسل عبر المحادثة أو GitHub.
 
@@ -9,11 +9,11 @@
 ```bash
 keytool -genkeypair -v \
   -keystore android/app/upload-keystore.jks \
-  -alias souf360-upload \
+  -alias ouedna-upload \
   -keyalg RSA -keysize 4096 -validity 10000
 ```
 
-> إذا كان تطبيق Souf 360 منشوراً بالفعل، يجب استخدام **نفس** مفتاح الرفع المسجّل في Play Console، ولا يجوز إنشاء مفتاح بديل إلا عبر إجراء إعادة ضبط مفتاح الرفع في Google Play.
+> إذا كان تطبيق Ouedna منشوراً بالفعل، يجب استخدام **نفس** مفتاح الرفع المسجّل في Play Console، ولا يجوز إنشاء مفتاح بديل إلا عبر إجراء إعادة ضبط مفتاح الرفع في Google Play.
 
 ## 2. إنشاء `android/key.properties`
 
@@ -22,7 +22,7 @@ keytool -genkeypair -v \
 ```properties
 storePassword=ضع_كلمة_مرور_المخزن
 keyPassword=ضع_كلمة_مرور_المفتاح
-keyAlias=souf360-upload
+keyAlias=ouedna-upload
 storeFile=app/upload-keystore.jks
 ```
 
@@ -30,7 +30,7 @@ storeFile=app/upload-keystore.jks
 
 ```bash
 export PATH="$PATH:/home/ubuntu/flutter/bin"
-cd /path/to/souf-tour
+cd /path/to/ouedna-app
 flutter build appbundle --release --obfuscate --split-debug-info=build/symbols
 ```
 
@@ -42,18 +42,18 @@ build/app/outputs/bundle/release/app-release.aab
 
 ## 4. إكمال روابط التطبيقات الموثقة
 
-يعمل الرابط المخصص `souf360://place/<id>` فور تثبيت التطبيق. لتجعل Android يفتح الرابط العام `https://souf360.vercel.app/place/<id>` مباشرة في التطبيق، استخرج بصمة SHA-256 لمفتاح الرفع/التوقيع:
+يعمل الرابط المخصص `ouedna://place/<id>` فور تثبيت التطبيق. لتجعل Android يفتح الرابط العام `https://ouedna.vercel.app/place/<id>` مباشرة في التطبيق، استخرج بصمة SHA-256 لمفتاح الرفع/التوقيع:
 
 ```bash
 keytool -list -v \
   -keystore android/app/upload-keystore.jks \
-  -alias souf360-upload
+  -alias ouedna-upload
 ```
 
 ثم أضف البصمة الفعلية إلى ملف `assetlinks.json` المنشور تحت:
 
 ```text
-https://souf360.vercel.app/.well-known/assetlinks.json
+https://ouedna.vercel.app/.well-known/assetlinks.json
 ```
 
-الحزمة المطلوبة هي `com.souf360.app`. لا تستخدم قيمة تخمينية أو بصمة شهادة Debug في هذا الملف.
+الحزمة المطلوبة هي `com.ouedna.app`. لا تستخدم قيمة تخمينية أو بصمة شهادة Debug في هذا الملف.

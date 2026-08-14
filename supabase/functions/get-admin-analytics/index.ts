@@ -13,7 +13,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const repository = "nadjimyahiaoui1992-lab/souf-tour";
+const repository = "nadjimyahiaoui1992-lab/ouedna-app";
 const cacheKey = "github_release_asset_downloads";
 const cacheLifetimeMs = 15 * 60 * 1000;
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 class OfflineCatalogueNotice extends StatelessWidget {
   const OfflineCatalogueNotice({super.key});
   @override
@@ -13,7 +14,10 @@ class OfflineCatalogueNotice extends StatelessWidget {
           Expanded(
             child: Text(
               'أنت تستخدم النسخة المخزنة مؤقتاً لعدم توفر الاتصال بالإنترنت.',
-              style: TextStyle(color: Colors.brown, fontSize: 13, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: Colors.brown,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600),
             ),
           ),
         ],

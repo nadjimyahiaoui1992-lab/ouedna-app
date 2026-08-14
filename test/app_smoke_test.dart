@@ -1,18 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:souf_tour/app/souf_tour_app.dart';
-import 'package:souf_tour/core/localization/ouedna_localization.dart';
-import 'package:souf_tour/core/storage/favorites_controller.dart';
+import 'package:ouedna_app/app/ouedna_app.dart';
+import 'package:ouedna_app/core/localization/ouedna_localization.dart';
+import 'package:ouedna_app/core/storage/favorites_controller.dart';
 
 void main() {
-  testWidgets('يفتح تطبيق Souf 360 للزائر دون اتصال', (tester) async {
+  testWidgets('يفتح تطبيق وادنا للزائر دون اتصال', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final preferences = await SharedPreferences.getInstance();
     final favorites = FavoritesController(preferences);
     final languageController = await AppLanguageController.load(preferences);
 
     await tester.pumpWidget(
-      SoufTourApp(
+      OuednaApp(
         placeRepository: null,
         communityRepository: null,
         tourGuideRepository: null,

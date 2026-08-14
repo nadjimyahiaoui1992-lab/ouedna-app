@@ -19,8 +19,8 @@ class CompassPlanner {
     final origin = preferences.origin;
     candidates.sort((a, b) {
       if (origin != null) {
-        final distanceCompare = _distanceSquared(a, origin)
-            .compareTo(_distanceSquared(b, origin));
+        final distanceCompare =
+            _distanceSquared(a, origin).compareTo(_distanceSquared(b, origin));
         if (distanceCompare != 0) return distanceCompare;
       }
       final ratingCompare = b.rating.compareTo(a.rating);
@@ -42,7 +42,9 @@ class CompassPlanner {
           .map((entry) => CompassStop(
                 place: entry.value,
                 order: entry.key + 1,
-                distanceMeters: origin == null ? null : _distanceMeters(entry.value, origin),
+                distanceMeters: origin == null
+                    ? null
+                    : _distanceMeters(entry.value, origin),
               ))
           .toList(growable: false),
     );
@@ -59,10 +61,13 @@ class CompassPlanner {
     final latitude1 = place.latitude! * math.pi / 180;
     final latitude2 = origin.latitude * math.pi / 180;
     final deltaLatitude = (origin.latitude - place.latitude!) * math.pi / 180;
-    final deltaLongitude = (origin.longitude - place.longitude!) * math.pi / 180;
+    final deltaLongitude =
+        (origin.longitude - place.longitude!) * math.pi / 180;
     final a = math.sin(deltaLatitude / 2) * math.sin(deltaLatitude / 2) +
-        math.cos(latitude1) * math.cos(latitude2) *
-            math.sin(deltaLongitude / 2) * math.sin(deltaLongitude / 2);
+        math.cos(latitude1) *
+            math.cos(latitude2) *
+            math.sin(deltaLongitude / 2) *
+            math.sin(deltaLongitude / 2);
     return earthRadius * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
   }
 }

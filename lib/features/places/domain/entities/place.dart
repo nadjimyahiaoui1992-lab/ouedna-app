@@ -43,7 +43,8 @@ class Place {
   final DateTime? _createdAt;
 
   double? get latitudeValue => latitude;
-  DateTime get createdAt => _createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime get createdAt =>
+      _createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
   String get category => mainCategory;
   bool get hasCoordinates => latitude != null && longitude != null;
 
@@ -51,7 +52,8 @@ class Place {
     final parts = <String>[];
     if (address != null && address!.isNotEmpty) parts.add(address!);
     if (district != null && district!.isNotEmpty) parts.add(district!);
-    if (municipality != null && municipality!.isNotEmpty) parts.add(municipality!);
+    if (municipality != null && municipality!.isNotEmpty)
+      parts.add(municipality!);
     return parts.isEmpty ? 'ولاية الوادي' : parts.join('، ');
   }
 }

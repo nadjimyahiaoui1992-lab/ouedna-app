@@ -8,3 +8,15 @@ android/app/google-services.json
 android/key.properties
 android/app/*.jks
 android/app/*.keystore
+.idea/
+.vscode/
+.pub/
+.pub-cache/
+coverage/
+ios/Pods/
+ios/Flutter/ephemeral/
+macos/Flutter/ephemeral/
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+*.log
+.DS_Store

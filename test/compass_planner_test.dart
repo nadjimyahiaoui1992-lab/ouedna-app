@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:souf_tour/features/compass/domain/compass_planner.dart';
-import 'package:souf_tour/features/compass/domain/itinerary_models.dart';
-import 'package:souf_tour/features/places/domain/entities/place.dart';
+import 'package:ouedna_app/features/compass/domain/compass_planner.dart';
+import 'package:ouedna_app/features/compass/domain/itinerary_models.dart';
+import 'package:ouedna_app/features/places/domain/entities/place.dart';
 
 void main() {
   const planner = CompassPlanner();

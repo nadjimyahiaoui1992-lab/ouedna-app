@@ -32,26 +32,32 @@ class _EmergencySheetState extends State<EmergencySheet> {
     });
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
-        throw const _EmergencyLocationError('خدمة الموقع متوقفة. فعّلها من إعدادات الهاتف ثم أعد المحاولة.');
+        throw const _EmergencyLocationError(
+            'خدمة الموقع متوقفة. فعّلها من إعدادات الهاتف ثم أعد المحاولة.');
       }
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
       if (permission == LocationPermission.denied) {
-        throw const _EmergencyLocationError('لم توافق على مشاركة موقع الضحية. يمكنك الاتصال بالطوارئ مباشرة.');
+        throw const _EmergencyLocationError(
+            'لم توافق على مشاركة موقع الضحية. يمكنك الاتصال بالطوارئ مباشرة.');
       }
       if (permission == LocationPermission.deniedForever) {
-        throw const _EmergencyLocationError('صلاحية الموقع مرفوضة نهائياً. فعّلها من إعدادات التطبيق إن أردت مشاركة الموقع.');
+        throw const _EmergencyLocationError(
+            'صلاحية الموقع مرفوضة نهائياً. فعّلها من إعدادات التطبيق إن أردت مشاركة الموقع.');
       }
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        locationSettings:
+            const LocationSettings(accuracy: LocationAccuracy.high),
       );
       if (mounted) setState(() => _position = position);
     } on _EmergencyLocationError catch (error) {
       if (mounted) setState(() => _locationError = error.message);
     } catch (_) {
-      if (mounted) setState(() => _locationError = 'تعذر تحديد الموقع حالياً. يمكنك الاتصال بالطوارئ مباشرة.');
+      if (mounted)
+        setState(() => _locationError =
+            'تعذر تحديد الموقع حالياً. يمكنك الاتصال بالطوارئ مباشرة.');
     } finally {
       if (mounted) setState(() => _locating = false);
     }
@@ -69,7 +75,8 @@ class _EmergencySheetState extends State<EmergencySheet> {
     final launched = await launchUrl(Uri(scheme: 'tel', path: number));
     if (!launched && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر فتح شاشة الاتصال. اطلب الرقم يدوياً.')),
+        const SnackBar(
+            content: Text('تعذر فتح شاشة الاتصال. اطلب الرقم يدوياً.')),
       );
     }
   }
@@ -100,12 +107,17 @@ class _EmergencySheetState extends State<EmergencySheet> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text('مساعدة عاجلة', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+                  child: Text('مساعدة عاجلة',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w900)),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            const Text('اتصل فوراً بخدمات الطوارئ. مشاركة الموقع اختيارية ولا تتم إلا بعد موافقتك الصريحة.'),
+            const Text(
+                'اتصل فوراً بخدمات الطوارئ. مشاركة الموقع اختيارية ولا تتم إلا بعد موافقتك الصريحة.'),
             const SizedBox(height: 18),
             _EmergencyNumberCard(
               icon: Icons.local_police_outlined,
@@ -124,18 +136,31 @@ class _EmergencySheetState extends State<EmergencySheet> {
             OutlinedButton.icon(
               onPressed: _locating ? null : _shareLocation,
               icon: _locating
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : Icon(_position == null ? Icons.my_location_outlined : Icons.share_location_outlined),
-              label: Text(_position == null ? 'تحديد الموقع ثم مشاركته' : 'مشاركة موقع الضحية'),
-              style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : Icon(_position == null
+                      ? Icons.my_location_outlined
+                      : Icons.share_location_outlined),
+              label: Text(_position == null
+                  ? 'تحديد الموقع ثم مشاركته'
+                  : 'مشاركة موقع الضحية'),
+              style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52)),
             ),
             if (_position != null) ...[
               const SizedBox(height: 8),
-              Text('تم تحديد الموقع بدقة تقريبية ${_position!.accuracy.round()} م. يمكنك الآن مشاركته مع الجهة التي تتواصل معها.', style: TextStyle(color: scheme.primary, fontSize: 12, height: 1.4)),
+              Text(
+                  'تم تحديد الموقع بدقة تقريبية ${_position!.accuracy.round()} م. يمكنك الآن مشاركته مع الجهة التي تتواصل معها.',
+                  style: TextStyle(
+                      color: scheme.primary, fontSize: 12, height: 1.4)),
             ],
             if (_locationError != null) ...[
               const SizedBox(height: 8),
-              Text(_locationError!, style: TextStyle(color: scheme.error, fontSize: 12, height: 1.4)),
+              Text(_locationError!,
+                  style: TextStyle(
+                      color: scheme.error, fontSize: 12, height: 1.4)),
             ],
           ],
         ),
@@ -145,7 +170,11 @@ class _EmergencySheetState extends State<EmergencySheet> {
 }
 
 class _EmergencyNumberCard extends StatelessWidget {
-  const _EmergencyNumberCard({required this.icon, required this.title, required this.number, required this.onCall});
+  const _EmergencyNumberCard(
+      {required this.icon,
+      required this.title,
+      required this.number,
+      required this.onCall});
   final IconData icon;
   final String title;
   final String number;
@@ -155,8 +184,11 @@ class _EmergencyNumberCard extends StatelessWidget {
   Widget build(BuildContext context) => Card(
         child: ListTile(
           leading: CircleAvatar(child: Icon(icon)),
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
-          subtitle: Text(number, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          title:
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+          subtitle: Text(number,
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
           trailing: FilledButton.icon(
             onPressed: onCall,
             icon: const Icon(Icons.call_outlined),

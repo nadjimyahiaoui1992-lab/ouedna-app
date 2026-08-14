@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/errors/app_exception.dart';
 import '../../domain/repositories/tour_guide_repository.dart';
+
 class SupabaseTourGuideRepository implements TourGuideRepository {
   SupabaseTourGuideRepository(this._client);
   final SupabaseClient _client;
@@ -20,12 +21,14 @@ class SupabaseTourGuideRepository implements TourGuideRepository {
         if (data['error'] != null) {
           throw AppException('عذراً، تعذر الرد: ${data['error']}');
         }
-        final answer = data['answer']?.toString() ?? data['response']?.toString();
+        final answer =
+            data['answer']?.toString() ?? data['response']?.toString();
         if (answer != null && answer.isNotEmpty) return answer;
       }
       return 'أهلاً بك في وادنا! يسرني مساعدتك في استكشاف معالم ولاية الوادي الرائعة.';
     } on FunctionException catch (error) {
-      throw AppException('تعذر الاتصال بالمساعد الذكي: ${error.details ?? error.reasonPhrase}');
+      throw AppException(
+          'تعذر الاتصال بالمساعد الذكي: ${error.details ?? error.reasonPhrase}');
     } catch (error) {
       throw AppException('تعذر الاتصال بالمساعد الذكي حالياً.');
     }

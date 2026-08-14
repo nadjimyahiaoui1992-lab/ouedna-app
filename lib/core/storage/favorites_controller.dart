@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 class FavoritesController extends ChangeNotifier {
   FavoritesController(this._preferences) {
     _load();
@@ -18,6 +19,7 @@ class FavoritesController extends ChangeNotifier {
       }
     }
   }
+
   bool isFavorite(int placeId) => _favorites.contains(placeId);
   bool contains(int placeId) => isFavorite(placeId);
   Future<void> toggle(int placeId) async {

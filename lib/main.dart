@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'app/souf_tour_app.dart';
+import 'app/ouedna_app.dart';
 import 'core/analytics/app_metrics_service.dart';
 import 'core/config/app_config.dart';
 import 'core/localization/ouedna_localization.dart';

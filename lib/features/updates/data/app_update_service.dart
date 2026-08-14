@@ -29,15 +29,30 @@ class AppUpdateInfo {
   final String? releaseNotes;
   final String currentVersion;
 
-  bool get isUpdateAvailable => _compareVersions(latestVersion, currentVersion) > 0;
+  bool get isUpdateAvailable =>
+      _compareVersions(latestVersion, currentVersion) > 0;
   bool get hasVerifiedDirectPackage =>
-      directApkUrl != null && directApkUrl!.startsWith('https://') &&
-      apkSha256 != null && RegExp(r'^[a-fA-F0-9]{64}$').hasMatch(apkSha256!);
+      directApkUrl != null &&
+      directApkUrl!.startsWith('https://') &&
+      apkSha256 != null &&
+      RegExp(r'^[a-fA-F0-9]{64}$').hasMatch(apkSha256!);
 
   static int _compareVersions(String first, String second) {
-    final firstParts = first.split('+').first.split('.').map((value) => int.tryParse(value) ?? 0).toList();
-    final secondParts = second.split('+').first.split('.').map((value) => int.tryParse(value) ?? 0).toList();
-    final length = firstParts.length > secondParts.length ? firstParts.length : secondParts.length;
+    final firstParts = first
+        .split('+')
+        .first
+        .split('.')
+        .map((value) => int.tryParse(value) ?? 0)
+        .toList();
+    final secondParts = second
+        .split('+')
+        .first
+        .split('.')
+        .map((value) => int.tryParse(value) ?? 0)
+        .toList();
+    final length = firstParts.length > secondParts.length
+        ? firstParts.length
+        : secondParts.length;
     for (var index = 0; index < length; index++) {
       final left = index < firstParts.length ? firstParts[index] : 0;
       final right = index < secondParts.length ? secondParts[index] : 0;
@@ -70,7 +85,8 @@ class AppUpdateService {
     final client = _client ?? Supabase.instance.client;
     final row = await client
         .from('app_config')
-        .select('latest_version, force_update, android_store_url, direct_apk_url, apk_sha256, release_notes')
+        .select(
+            'latest_version, force_update, android_store_url, direct_apk_url, apk_sha256, release_notes')
         .eq('id', 1)
         .maybeSingle();
     if (row == null || row['latest_version'] == null) return null;
@@ -85,15 +101,19 @@ class AppUpdateService {
     );
   }
 
-  Future<String> downloadVerifiedApk(AppUpdateInfo update, ValueChanged<double>? onProgress) async {
+  Future<String> downloadVerifiedApk(
+      AppUpdateInfo update, ValueChanged<double>? onProgress) async {
     if (!isDirectDistribution) {
-      throw const AppUpdateException('التثبيت المباشر غير متاح في إصدار متجر Play.');
+      throw const AppUpdateException(
+          'التثبيت المباشر غير متاح في إصدار متجر Play.');
     }
     if (!update.hasVerifiedDirectPackage) {
-      throw const AppUpdateException('ملف التحديث أو بصمته غير مكتملين في إعدادات الإصدار.');
+      throw const AppUpdateException(
+          'ملف التحديث أو بصمته غير مكتملين في إعدادات الإصدار.');
     }
 
-    final response = await _httpClient.send(http.Request('GET', Uri.parse(update.directApkUrl!)));
+    final response = await _httpClient
+        .send(http.Request('GET', Uri.parse(update.directApkUrl!)));
     if (response.statusCode != HttpStatus.ok) {
       throw const AppUpdateException('تعذر تنزيل ملف التحديث من الخادم.');
     }
@@ -110,7 +130,8 @@ class AppUpdateService {
       await for (final chunk in response.stream) {
         received += chunk.length;
         if (received > 250 * 1024 * 1024) {
-          throw const AppUpdateException('توقف التنزيل لأن الملف تجاوز الحد المسموح به.');
+          throw const AppUpdateException(
+              'توقف التنزيل لأن الملف تجاوز الحد المسموح به.');
         }
         sink.add(chunk);
         if (expectedLength != null && expectedLength > 0) {
@@ -131,7 +152,8 @@ class AppUpdateService {
       } catch (_) {
         // The invalid update remains inaccessible and will be replaced on the next download.
       }
-      throw const AppUpdateException('فشل التحقق من سلامة ملف التحديث؛ تم إلغاء التثبيت لحمايتك.');
+      throw const AppUpdateException(
+          'فشل التحقق من سلامة ملف التحديث؛ تم إلغاء التثبيت لحمايتك.');
     }
     onProgress?.call(1);
     return file.path;
@@ -143,7 +165,8 @@ class AppUpdateService {
     }
     final file = File(apkFilePath);
     if (!await file.exists() || !apkFilePath.toLowerCase().endsWith('.apk')) {
-      throw const AppUpdateException('مسار ملف APK غير صالح أو أن الملف غير موجود.');
+      throw const AppUpdateException(
+          'مسار ملف APK غير صالح أو أن الملف غير موجود.');
     }
 
     var permission = await Permission.requestInstallPackages.status;
@@ -176,7 +199,8 @@ class AppUpdateService {
       }
       permission = await Permission.requestInstallPackages.request();
       if (!permission.isGranted) {
-        throw const AppUpdateException('لا يزال الإذن غير مفعّل. فعّله من شاشة «السماح من هذا المصدر» ثم أعد المحاولة.');
+        throw const AppUpdateException(
+            'لا يزال الإذن غير مفعّل. فعّله من شاشة «السماح من هذا المصدر» ثم أعد المحاولة.');
       }
     }
 
@@ -194,8 +218,10 @@ class AppUpdateService {
     if (url == null) {
       throw const AppUpdateException('رابط المتجر غير مهيأ بعد.');
     }
-    final opened = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    if (!opened) throw const AppUpdateException('تعذر فتح صفحة التحديث في المتجر.');
+    final opened =
+        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    if (!opened)
+      throw const AppUpdateException('تعذر فتح صفحة التحديث في المتجر.');
   }
 
   void dispose() => _httpClient.close();

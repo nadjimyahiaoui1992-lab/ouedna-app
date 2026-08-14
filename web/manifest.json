@@ -1,11 +1,11 @@
 {
-  "name": "Souf Tour — El Oued",
-  "short_name": "Souf Tour",
+  "name": "وادنا Ouedna — دليل وادي سوف",
+  "short_name": "وادنا",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#FCF8F2",
-  "theme_color": "#9B4A26",
-  "description": "Discover El Oued and the Souf region responsibly. This progressive web application intentionally uses no generic stock or placeholder media. ",
+  "background_color": "#F8F7F2",
+  "theme_color": "#0E4B42",
+  "description": "الدليل السياحي الذكي لاكتشاف معالم واحات وتراث ولاية الوادي، الجزائر.",
   "orientation": "portrait-primary",
   "prefer_related_applications": false
 }
