@@ -1,8 +1,9 @@
 from pathlib import Path
 from PIL import Image
 
-source = Path('/home/ubuntu/souf-tour/assets/branding/icon.png')
-target = Path('/home/ubuntu/souf-tour/ios/Runner/Assets.xcassets/AppIcon.appiconset')
+repository_root = Path(__file__).resolve().parents[1]
+source = repository_root / 'assets/branding/icon.png'
+target = repository_root / 'ios/Runner/Assets.xcassets/AppIcon.appiconset'
 
 sizes = {
     'Icon-App-20x20@1x.png': 20,
