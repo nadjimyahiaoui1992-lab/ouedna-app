@@ -53,5 +53,5 @@
 
 - [x] Auditer les thèmes et constantes de couleur du site, de l’application visiteur et de l’administration.
 - [x] Définir des jetons communs inspirés du sable, de l’argile, de l’oasis et du coucher de soleil.
-- [ ] Appliquer la palette aux surfaces, actions, états, cartes et éléments de navigation des trois interfaces.
-- [ ] Vérifier les contrastes, les analyses Flutter et les builds avant publication.
+- [x] Appliquer la palette aux surfaces, actions, états, cartes et éléments de navigation des trois interfaces.
+- [x] Vérifier les contrastes, les analyses Flutter et les builds avant publication.
