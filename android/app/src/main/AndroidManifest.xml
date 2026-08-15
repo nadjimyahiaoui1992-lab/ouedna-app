@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <application
-        android:label="وادنا"
+        android:label="وادنا الجديدة"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
@@ -33,12 +33,12 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- ouedna://place/123 -->
+            <!-- ouedna-v2://place/123 -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="ouedna" android:host="place" />
+                <data android:scheme="ouedna-v2" android:host="place" />
             </intent-filter>
 
             <!-- https://ouedna.vercel.app/place/123 -->

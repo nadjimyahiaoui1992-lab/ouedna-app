@@ -21,7 +21,7 @@ def hasReleaseSigning = [
 def splitPerAbi = project.findProperty("split-per-abi")?.toBoolean() ?: false
 
 android {
-    namespace = "com.ouedna.app"
+    namespace = "com.ouedna.app.v2"
     compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
@@ -35,7 +35,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.ouedna.app"
+        applicationId = "com.ouedna.app.v2"
         minSdk = 21
         targetSdk = 35
         versionCode = flutter.versionCode

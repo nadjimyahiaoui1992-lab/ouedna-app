@@ -194,13 +194,13 @@ class _SoufMapPageState extends State<SoufMapPage> {
                       urlTemplate: _layer == _MapLayer.standard
                           ? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
                           : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                      userAgentPackageName: 'com.ouedna.app',
+                      userAgentPackageName: 'com.ouedna.app.v2',
                     ),
                     if (_layer == _MapLayer.satellite)
                       TileLayer(
                         urlTemplate:
                             'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-                        userAgentPackageName: 'com.ouedna.app',
+                        userAgentPackageName: 'com.ouedna.app.v2',
                       ),
                     MarkerLayer(
                       markers: [

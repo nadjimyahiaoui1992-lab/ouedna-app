@@ -135,7 +135,8 @@ class _OuednaAppState extends State<OuednaApp> {
   }
 
   int? _placeIdFromUri(Uri uri) {
-    if (uri.scheme == 'ouedna' && uri.host == 'place') {
+    if ((uri.scheme == 'ouedna' || uri.scheme == 'ouedna-v2') &&
+        uri.host == 'place') {
       return uri.pathSegments.isEmpty
           ? null
           : int.tryParse(uri.pathSegments.first);

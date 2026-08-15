@@ -421,7 +421,7 @@ class _VisitorMapPickerState extends State<_VisitorMapPicker> {
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.ouedna.app',
+                  userAgentPackageName: 'com.ouedna.app.v2',
                 ),
                 MarkerLayer(
                   markers: [

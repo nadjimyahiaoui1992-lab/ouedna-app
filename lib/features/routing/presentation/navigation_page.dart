@@ -131,7 +131,7 @@ class _NavigationPageState extends State<NavigationPage> {
                   urlTemplate:
                       'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                   subdomains: const ['a', 'b', 'c'],
-                  userAgentPackageName: 'com.ouedna.app',
+                  userAgentPackageName: 'com.ouedna.app.v2',
                 ),
                 if (route != null && route.geometry.isNotEmpty) ...[
                   PolylineLayer(
