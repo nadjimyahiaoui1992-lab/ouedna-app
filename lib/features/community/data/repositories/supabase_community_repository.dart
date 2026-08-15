@@ -1,9 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/errors/app_exception.dart';
+import '../../domain/entities/archive_memory.dart';
 import '../../domain/entities/testimonial.dart';
 import '../../domain/entities/visitor_inquiry.dart';
 import '../../domain/repositories/community_repository.dart';
+import '../models/archive_memory_model.dart';
 import '../models/testimonial_model.dart';
 
 class SupabaseCommunityRepository implements CommunityRepository {
@@ -33,6 +35,44 @@ class SupabaseCommunityRepository implements CommunityRepository {
       throw AppException('تعذر تحميل تجارب الزوار حالياً.', cause: error.code);
     } catch (error) {
       throw AppException('تعذر تحميل تجارب الزوار حالياً.',
+          cause: error.runtimeType);
+    }
+  }
+
+  @override
+  Future<List<ArchiveMemory>> getPublishedArchive({int limit = 48}) async {
+    try {
+      final responses = await Future.wait([
+        _client
+            .from('old_memories')
+            .select('id,image_url,gallery,caption,year,created_at')
+            .order('created_at', ascending: false)
+            .limit(limit.clamp(1, 80)),
+        _client
+            .from('heritage')
+            .select('id,image,gallery,title,text,year,created_at')
+            .order('created_at', ascending: false)
+            .limit(limit.clamp(1, 80)),
+      ]);
+
+      final entries = <ArchiveMemory>[
+        ...(responses[0] as List<dynamic>)
+            .whereType<Map<String, dynamic>>()
+            .map(ArchiveMemoryModel.fromOldMemory),
+        ...(responses[1] as List<dynamic>)
+            .whereType<Map<String, dynamic>>()
+            .map(ArchiveMemoryModel.fromHeritage),
+      ].where((item) => item.images.isNotEmpty).toList(growable: false);
+
+      entries.sort((left, right) => (right.createdAt ??
+              DateTime.fromMillisecondsSinceEpoch(0))
+          .compareTo(left.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0)));
+      return entries.take(limit.clamp(1, 80)).toList(growable: false);
+    } on PostgrestException catch (error) {
+      throw AppException('تعذر تحميل أرشيف وادي سوف حالياً.',
+          cause: error.code);
+    } catch (error) {
+      throw AppException('تعذر تحميل أرشيف وادي سوف حالياً.',
           cause: error.runtimeType);
     }
   }

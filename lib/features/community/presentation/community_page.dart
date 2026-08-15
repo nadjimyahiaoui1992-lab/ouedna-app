@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../data/repositories/supabase_community_repository.dart';
 import '../domain/entities/testimonial.dart';
 import '../domain/repositories/community_repository.dart';
 import 'archive_page.dart';
@@ -33,7 +32,7 @@ class _CommunityPageState extends State<CommunityPage> {
 
   @override
   Widget build(BuildContext context) {
-    final archiveEnabled = widget.repository is SupabaseCommunityRepository;
+    final archiveEnabled = widget.repository != null;
     return Scaffold(
       appBar: AppBar(title: const Text('المجتمع')),
       body: RefreshIndicator(
@@ -47,9 +46,7 @@ class _CommunityPageState extends State<CommunityPage> {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => ArchivePage(
-                            placeRepository: null,
-                            communityRepository: widget.repository!
-                                as SupabaseCommunityRepository,
+                            communityRepository: widget.repository,
                           ),
                         ),
                       );
