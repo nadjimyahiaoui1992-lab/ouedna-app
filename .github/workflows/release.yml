@@ -54,7 +54,6 @@ jobs:
           missing=()
           for secret in \
             ANDROID_KEYSTORE_BASE64 \
-            GOOGLE_SERVICES_JSON_BASE64 \
             OUEDNA_KEY_ALIAS \
             OUEDNA_KEY_PASSWORD \
             OUEDNA_STORE_PASSWORD \
@@ -77,9 +76,18 @@ jobs:
 
       - name: Restore Firebase Android configuration
         run: |
-          printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
-          test -s android/app/google-services.json
-          chmod 600 android/app/google-services.json
+          temporary_config="$(mktemp)"
+          if [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "Firebase Android configuration is not set; continuing without optional Firebase services."
+          elif printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > "$temporary_config" 2>/dev/null \
+            && jq -e '.project_info.project_number and .client[0].client_info.android_client_info.package_name == "com.ouedna.app.v2"' "$temporary_config" >/dev/null; then
+            mv "$temporary_config" android/app/google-services.json
+            chmod 600 android/app/google-services.json
+            echo "Firebase Android configuration restored for com.ouedna.app.v2."
+          else
+            rm -f "$temporary_config"
+            echo "Firebase Android configuration is absent or invalid; continuing without optional Firebase services."
+          fi
 
       - name: Resolve dependencies and test
         run: |
