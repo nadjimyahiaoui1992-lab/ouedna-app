@@ -219,6 +219,8 @@ class SupabaseCommunityRepository implements CommunityRepository {
     final extension = clean.split('.').last;
     if ({'png'}.contains(extension)) return 'png';
     if ({'webp'}.contains(extension)) return 'webp';
+    if ({'jpeg', 'jpg'}.contains(extension)) return 'jpg';
+    if ({'heic', 'heif'}.contains(extension)) return 'jpg';
     return 'jpg';
   }
 
