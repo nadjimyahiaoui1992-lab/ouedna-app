@@ -47,3 +47,4 @@
 - [x] Autoriser l’enregistrement des secrets GitHub de signature pour le dépôt Ouedna Admin.
 - [x] Construire, signer et vérifier l’APK Ouedna Admin 2 avec la gestion d’archives par upload direct.
 - [x] Publier la release et remettre le lien d’installation.
+- [x] Diagnostiquer et corriger le lien direct 404 de la release Ouedna Admin 2.
