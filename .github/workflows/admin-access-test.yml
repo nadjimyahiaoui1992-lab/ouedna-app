@@ -1,0 +1,30 @@
+name: Admin access RLS check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-admin-access:
+    name: Verify production admin read access
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      OUEDNA_SUPABASE_URL: https://cwbenhuiextfoiyfboxo.supabase.co
+      OUEDNA_SUPABASE_ANON_KEY: ${{ secrets.OUEDNA_SUPABASE_ANON_KEY }}
+      OUEDNA_TEST_ADMIN_EMAIL: ${{ secrets.OUEDNA_TEST_ADMIN_EMAIL }}
+      OUEDNA_TEST_ADMIN_PASSWORD: ${{ secrets.OUEDNA_TEST_ADMIN_PASSWORD }}
+      OUEDNA_EXPECTED_ADMIN_ROLE: admin
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify administrator access under RLS
+        run: node tools/test_admin_access.mjs

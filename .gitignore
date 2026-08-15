@@ -19,4 +19,5 @@ macos/Flutter/ephemeral/
 linux/flutter/ephemeral/
 windows/flutter/ephemeral/
 *.log
+.env.admin-test
 .DS_Store
