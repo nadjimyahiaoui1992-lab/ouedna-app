@@ -36,4 +36,4 @@
 - [x] Ajouter la création et l’édition d’une archive avec sélection de plusieurs photos dans Ouedna Admin.
 - [x] Enregistrer automatiquement les URLs publiques et le contenu de galerie dans Supabase.
 - [x] Vérifier l’affichage des photos d’archive publiées dans l’application visiteur.
-- [ ] Tester et publier les mises à jour versionnées des applications concernées.
+- [x] Tester et publier les mises à jour versionnées des applications concernées.
