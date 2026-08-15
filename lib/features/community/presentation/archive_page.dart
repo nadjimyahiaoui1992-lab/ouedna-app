@@ -200,6 +200,27 @@ class _ArchiveCard extends StatefulWidget {
 
 class _ArchiveCardState extends State<_ArchiveCard> {
   var _index = 0;
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _selectImage(int index) {
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -213,6 +234,7 @@ class _ArchiveCardState extends State<_ArchiveCard> {
             aspectRatio: 16 / 10,
             child: Stack(children: [
               PageView.builder(
+                controller: _pageController,
                 itemCount: memory.images.length,
                 onPageChanged: (value) => setState(() => _index = value),
                 itemBuilder: (_, index) => Image.network(
@@ -243,6 +265,49 @@ class _ArchiveCardState extends State<_ArchiveCard> {
               ),
             ]),
           ),
+          if (memory.images.length > 1)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: SizedBox(
+                height: 54,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: memory.images.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (_, index) => Semantics(
+                    button: true,
+                    selected: index == _index,
+                    label: 'عرض الصورة ${index + 1} من ${memory.images.length}',
+                    child: InkWell(
+                      onTap: () => _selectImage(index),
+                      borderRadius: BorderRadius.circular(9),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: 54,
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(
+                            color: index == _index
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                        child: Image.network(
+                          memory.images[index],
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const ColoredBox(
+                            color: Color(0xFFE4ECE8),
+                            child: Icon(Icons.broken_image_outlined, size: 20),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(16),
             child:

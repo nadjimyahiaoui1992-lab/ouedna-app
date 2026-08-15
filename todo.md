@@ -20,5 +20,20 @@
 - [x] Vérifier toutes les références Android, Firebase et liens profonds liées au package actuel.
 - [x] Migrer l’édition autonome vers `com.ouedna.app.v2` et préparer le parcours de transition utilisateur.
 - [x] Créer un nouveau keystore et configurer son circuit de signature sans l’ajouter au dépôt.
-- [ ] Enregistrer l’application Android v2 dans Firebase et intégrer son fichier de configuration sécurisé.
-- [ ] Construire, signer, vérifier et publier l’APK autonome avec les instructions d’installation.
+- [x] Enregistrer l’application Android v2 dans Firebase et intégrer son fichier de configuration sécurisé.
+- [x] Construire, signer, vérifier et publier l’APK autonome avec les instructions d’installation.
+
+## Publication depuis la console d’administration
+
+- [ ] Vérifier la structure des mises à jour et notifications administrables existantes.
+- [ ] Publier la fiche Ouedna الجديدة 2.1.1 avec le lien APK et le message de transition.
+- [ ] Vérifier son affichage dans l’application Ouedna Admin.
+
+## Gestion d’archives avec téléversement direct
+
+- [x] Auditer les tables d’archive, les buckets Storage et les politiques RLS applicables.
+- [x] Créer ou sécuriser le bucket dédié aux images d’archive avec validation de type et taille.
+- [x] Ajouter la création et l’édition d’une archive avec sélection de plusieurs photos dans Ouedna Admin.
+- [x] Enregistrer automatiquement les URLs publiques et le contenu de galerie dans Supabase.
+- [x] Vérifier l’affichage des photos d’archive publiées dans l’application visiteur.
+- [ ] Tester et publier les mises à jour versionnées des applications concernées.
