@@ -51,13 +51,23 @@ jobs:
 
       - name: Validate release secrets
         run: |
-          test -n "$ANDROID_KEYSTORE_BASE64"
-          test -n "$GOOGLE_SERVICES_JSON_BASE64"
-          test -n "$OUEDNA_KEY_ALIAS"
-          test -n "$OUEDNA_KEY_PASSWORD"
-          test -n "$OUEDNA_STORE_PASSWORD"
-          test -n "$SUPABASE_URL"
-          test -n "$SUPABASE_PUBLISHABLE_KEY"
+          missing=()
+          for secret in \
+            ANDROID_KEYSTORE_BASE64 \
+            GOOGLE_SERVICES_JSON_BASE64 \
+            OUEDNA_KEY_ALIAS \
+            OUEDNA_KEY_PASSWORD \
+            OUEDNA_STORE_PASSWORD \
+            SUPABASE_URL \
+            SUPABASE_PUBLISHABLE_KEY; do
+            if [ -z "${!secret}" ]; then
+              missing+=("$secret")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "Missing required GitHub Actions secrets: ${missing[*]}" >&2
+            exit 1
+          fi
 
       - name: Restore Android signing key
         run: |
