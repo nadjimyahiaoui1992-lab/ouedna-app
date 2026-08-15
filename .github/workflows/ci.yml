@@ -49,14 +49,14 @@ jobs:
         run: flutter test --coverage
 
       - name: Build verification APK
-        run: flutter build apk --debug
+        run: flutter build apk --debug --flavor direct
 
       - name: Upload APK and coverage
         uses: actions/upload-artifact@v4
         with:
           name: souf-tour-debug-${{ github.sha }}
           path: |
-            build/app/outputs/flutter-apk/app-debug.apk
+            build/app/outputs/flutter-apk/app-direct-debug.apk
             coverage/lcov.info
           if-no-files-found: error
           retention-days: 14
