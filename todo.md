@@ -37,3 +37,13 @@
 - [x] Enregistrer automatiquement les URLs publiques et le contenu de galerie dans Supabase.
 - [x] Vérifier l’affichage des photos d’archive publiées dans l’application visiteur.
 - [x] Tester et publier les mises à jour versionnées des applications concernées.
+
+## Publication APK Ouedna Admin
+
+- [x] Auditer le workflow, les secrets de signature et l’identité de l’application administrateur.
+- [x] Confirmer que la transition requiert une application indépendante car l’APK historique est signé avec une clé debug indisponible.
+- [x] Créer l’identité `com.ouedna.admin.v2` et la configuration Android de Ouedna Admin 2.
+- [x] Créer une clé de release dédiée et un pipeline GitHub Actions sécurisé.
+- [x] Autoriser l’enregistrement des secrets GitHub de signature pour le dépôt Ouedna Admin.
+- [x] Construire, signer et vérifier l’APK Ouedna Admin 2 avec la gestion d’archives par upload direct.
+- [x] Publier la release et remettre le lien d’installation.
