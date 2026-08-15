@@ -1,7 +1,7 @@
 name: ouedna_app
 description: وادنا - الدليل السياحي الذكي لولاية وادي سوف (Wadi Souf).
 publish_to: "none"
-version: 2.1.3+35
+version: 2.1.4+36
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
