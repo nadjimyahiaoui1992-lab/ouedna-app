@@ -32,9 +32,9 @@ class WelcomePage extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xCC102D28),
-                  Color(0x66102D28),
-                  Color(0xEE102D28),
+                  Color(0xD9231B17),
+                  Color(0x6630241B),
+                  Color(0xED231B17),
                 ],
                 stops: [0, .45, 1],
               ),
@@ -51,7 +51,7 @@ class WelcomePage extends StatelessWidget {
                       _BrandMark(),
                       const Spacer(),
                       const LanguageSelector(
-                          foregroundColor: Color(0xFFFBF7EF)),
+                          foregroundColor: Color(0xFFFFF7EA)),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -59,14 +59,14 @@ class WelcomePage extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0x33D9A441),
+                      color: const Color(0x33D58B2D),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFD9A441)),
+                      border: Border.all(color: const Color(0xFFD58B2D)),
                     ),
                     child: Text(
                       strings.text('official_platform'),
                       style: const TextStyle(
-                        color: Color(0xFFFBF7EF),
+                        color: Color(0xFFFFF7EA),
                         fontWeight: FontWeight.w900,
                         fontSize: 12,
                       ),
@@ -85,7 +85,7 @@ class WelcomePage extends StatelessWidget {
                   Text(
                     strings.text('desert_heart'),
                     style: const TextStyle(
-                      color: Color(0xFFD9A441),
+                      color: Color(0xFFD58B2D),
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.5,
@@ -95,7 +95,7 @@ class WelcomePage extends StatelessWidget {
                   Text(
                     strings.text('welcome_intro'),
                     style: const TextStyle(
-                      color: Color(0xFFE0EEE7),
+                      color: Color(0xFFF6E6CA),
                       fontSize: 15,
                       height: 1.6,
                     ),
@@ -120,8 +120,8 @@ class WelcomePage extends StatelessWidget {
                     width: double.infinity,
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFD9A441),
-                        foregroundColor: const Color(0xFF102D28),
+                        backgroundColor: const Color(0xFFD58B2D),
+                        foregroundColor: const Color(0xFF30241B),
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -185,17 +185,17 @@ class _WelcomeValue extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: const BoxDecoration(
-              color: Color(0x26D9A441),
+              color: Color(0x26D58B2D),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 18, color: const Color(0xFFD9A441)),
+            child: Icon(icon, size: 18, color: const Color(0xFFD58B2D)),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               text,
               style: const TextStyle(
-                color: Color(0xFFFDF7EE),
+                color: Color(0xFFFFF7EA),
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
               ),

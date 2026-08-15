@@ -48,3 +48,10 @@
 - [x] Construire, signer et vérifier l’APK Ouedna Admin 2 avec la gestion d’archives par upload direct.
 - [x] Publier la release et remettre le lien d’installation.
 - [x] Diagnostiquer et corriger le lien direct 404 de la release Ouedna Admin 2.
+
+## Palette Dunes et Oasis — site et applications
+
+- [x] Auditer les thèmes et constantes de couleur du site, de l’application visiteur et de l’administration.
+- [x] Définir des jetons communs inspirés du sable, de l’argile, de l’oasis et du coucher de soleil.
+- [ ] Appliquer la palette aux surfaces, actions, états, cartes et éléments de navigation des trois interfaces.
+- [ ] Vérifier les contrastes, les analyses Flutter et les builds avant publication.

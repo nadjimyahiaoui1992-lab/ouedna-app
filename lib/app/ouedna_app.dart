@@ -309,7 +309,7 @@ class _OuednaAppState extends State<OuednaApp> {
                                 children: [
                                   DecoratedBox(
                                     decoration: const BoxDecoration(
-                                      color: Color(0xEFFFFFFF),
+                                      color: Color(0xEFFFFCF7),
                                       shape: BoxShape.circle,
                                     ),
                                     child: NotificationBell(
