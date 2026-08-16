@@ -1,6 +1,6 @@
 plugins {
     id "com.android.application"
-    id "kotlin-android"
+    id "org.jetbrains.kotlin.android"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -79,6 +79,10 @@ android {
 
     buildTypes {
         release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
+                'proguard-rules.pro'
             if (requestsReleaseBuild && !hasReleaseSigning) {
                 throw new GradleException(
                     "La signature release exige OUEDNA_KEYSTORE_PATH, OUEDNA_KEY_ALIAS, " +
