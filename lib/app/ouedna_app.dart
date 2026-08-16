@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/localization/ouedna_localization.dart';
 import '../core/storage/favorites_controller.dart';
@@ -22,6 +23,7 @@ import '../features/routing/domain/routing_service.dart';
 import '../features/tour_guide/domain/repositories/tour_guide_repository.dart';
 import '../features/updates/data/app_update_service.dart';
 import '../features/updates/presentation/update_center_page.dart';
+import '../core/widgets/entry_permissions_dialog.dart';
 import '../features/welcome/presentation/privacy_policy_page.dart';
 import '../features/welcome/presentation/welcome_page.dart';
 
@@ -34,6 +36,7 @@ class OuednaApp extends StatefulWidget {
     this.routingService,
     required this.favoritesController,
     required this.languageController,
+    this.preferences,
     required this.isBackendConfigured,
   });
 
@@ -43,6 +46,7 @@ class OuednaApp extends StatefulWidget {
   final RoutingService? routingService;
   final FavoritesController favoritesController;
   final AppLanguageController languageController;
+  final SharedPreferences? preferences;
   final bool isBackendConfigured;
 
   @override
@@ -181,8 +185,38 @@ class _OuednaAppState extends State<OuednaApp> {
 
   void _enterApp() {
     setState(() => _showWelcome = false);
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _maybePromptForUpdate());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _maybePromptForEntryPermissions();
+      if (mounted) await _maybePromptForUpdate();
+    });
+  }
+
+  Future<void> _maybePromptForEntryPermissions() async {
+    final preferences = widget.preferences;
+    if (preferences == null) return;
+    const promptVersion = 2;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final lastVersion =
+        preferences.getInt('ouedna.entry_permissions_prompt_version');
+    final lastPrompt =
+        preferences.getInt('ouedna.entry_permissions_prompted_at');
+    const cooldown = Duration(days: 7);
+    if (lastVersion == promptVersion &&
+        lastPrompt != null &&
+        now - lastPrompt < cooldown.inMilliseconds) {
+      return;
+    }
+    await preferences.setInt(
+        'ouedna.entry_permissions_prompt_version', promptVersion);
+    await preferences.setInt('ouedna.entry_permissions_prompted_at', now);
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => EntryPermissionsDialog(
+        languageController: widget.languageController,
+      ),
+    );
   }
 
   Future<void> _maybePromptForUpdate() async {

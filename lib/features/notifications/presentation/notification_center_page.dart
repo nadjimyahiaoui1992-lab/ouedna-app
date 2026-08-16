@@ -67,8 +67,43 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
 
   Future<void> _markAllRead() async {
     await _notifications.markAllRead(_items.map((item) => item.id));
-    if (mounted)
+    if (mounted) {
       setState(() => _readIds = _items.map((item) => item.id).toSet());
+    }
+  }
+
+  Future<void> _deletePrevious() async {
+    if (_items.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف الإشعارات السابقة؟'),
+        content: const Text(
+          'ستختفي هذه الإشعارات من جهازك فقط. لن يتم حذفها من Supabase أو من أجهزة المستخدمين الآخرين.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حذف الكل'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _notifications.dismissAll(_items.map((item) => item.id));
+    if (mounted) {
+      setState(() {
+        _items = const [];
+        _readIds = const {};
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حذف الإشعارات السابقة من جهازك.')),
+      );
+    }
   }
 
   Future<void> _open(VisitorNotification item) async {
@@ -124,6 +159,12 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
               onPressed: _markAllRead,
               icon: const Icon(Icons.done_all_rounded),
               label: const Text('قراءة الكل'),
+            ),
+          if (_items.isNotEmpty)
+            IconButton(
+              tooltip: 'حذف الإشعارات السابقة',
+              onPressed: _deletePrevious,
+              icon: const Icon(Icons.delete_sweep_outlined),
             ),
         ],
       ),

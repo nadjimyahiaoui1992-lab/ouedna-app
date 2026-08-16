@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../core/localization/ouedna_localization.dart';
 import '../../../core/storage/favorites_controller.dart';
+import '../../../core/widgets/ouedna_map_tiles.dart';
 import '../../community/domain/repositories/community_repository.dart';
 import '../../routing/domain/routing_service.dart';
 import '../../routing/presentation/live_navigation_page.dart';
@@ -179,7 +180,10 @@ class _PlaceDetailsPageState extends State<PlaceDetailsPage> {
                       final gallery =
                           snapshot.data ?? const <PlaceGalleryImage>[];
                       if (gallery.isEmpty) return const SizedBox.shrink();
-                      return _Gallery(gallery: gallery);
+                      return _Gallery(
+                        gallery: gallery,
+                        onTap: (index) => _openGallery(gallery, index),
+                      );
                     },
                   ),
                   if (place.hasCoordinates) ...[
@@ -198,6 +202,20 @@ class _PlaceDetailsPageState extends State<PlaceDetailsPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _openGallery(
+    List<PlaceGalleryImage> gallery,
+    int initialIndex,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => _GalleryViewer(
+        gallery: gallery,
+        initialIndex: initialIndex,
       ),
     );
   }
@@ -237,6 +255,8 @@ class _HeroImage extends StatelessWidget {
     return CachedNetworkImage(
       imageUrl: url,
       fit: BoxFit.cover,
+      memCacheWidth: 1200,
+      memCacheHeight: 720,
       placeholder: (_, __) => ColoredBox(
           color: Theme.of(context).colorScheme.surfaceContainerHighest),
       errorWidget: (_, __, ___) => const ColoredBox(
@@ -296,9 +316,10 @@ class _Actions extends StatelessWidget {
 }
 
 class _Gallery extends StatelessWidget {
-  const _Gallery({required this.gallery});
+  const _Gallery({required this.gallery, required this.onTap});
 
   final List<PlaceGalleryImage> gallery;
+  final ValueChanged<int> onTap;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -317,19 +338,128 @@ class _Gallery extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               itemCount: gallery.length,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (context, index) => ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: CachedNetworkImage(
-                  imageUrl: gallery[index].imageUrl,
-                  width: 176,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) =>
-                      const Icon(Icons.broken_image_outlined),
+              itemBuilder: (context, index) => GestureDetector(
+                onTap: () => onTap(index),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: CachedNetworkImage(
+                    imageUrl: gallery[index].imageUrl,
+                    width: 176,
+                    fit: BoxFit.cover,
+                    memCacheWidth: 420,
+                    memCacheHeight: 300,
+                    placeholder: (_, __) => const ColoredBox(
+                      color: Color(0xFFE8EFEA),
+                      child: Center(child: Icon(Icons.image_outlined)),
+                    ),
+                    errorWidget: (_, __, ___) => const ColoredBox(
+                      color: Color(0xFFE8EFEA),
+                      child: Center(child: Icon(Icons.broken_image_outlined)),
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
         ],
+      );
+}
+
+class _GalleryViewer extends StatefulWidget {
+  const _GalleryViewer({required this.gallery, required this.initialIndex});
+
+  final List<PlaceGalleryImage> gallery;
+  final int initialIndex;
+
+  @override
+  State<_GalleryViewer> createState() => _GalleryViewerState();
+}
+
+class _GalleryViewerState extends State<_GalleryViewer> {
+  late final PageController _controller;
+  late int _index;
+
+  @override
+  void initState() {
+    super.initState();
+    _index = widget.initialIndex;
+    _controller = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              PageView.builder(
+                controller: _controller,
+                itemCount: widget.gallery.length,
+                onPageChanged: (value) => setState(() => _index = value),
+                itemBuilder: (context, index) => InteractiveViewer(
+                  minScale: 1,
+                  maxScale: 4,
+                  child: Center(
+                    child: CachedNetworkImage(
+                      imageUrl: widget.gallery[index].imageUrl,
+                      fit: BoxFit.contain,
+                      memCacheWidth: 1600,
+                      placeholder: (_, __) => const CircularProgressIndicator(
+                        color: Colors.white,
+                      ),
+                      errorWidget: (_, __, ___) => const Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.white,
+                        size: 56,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              PositionedDirectional(
+                top: 12,
+                start: 12,
+                child: IconButton.filled(
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ),
+              PositionedDirectional(
+                top: 18,
+                end: 18,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
+                    ),
+                    child: Text(
+                      '${_index + 1} / ${widget.gallery.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
 }
 
@@ -348,10 +478,7 @@ class _MiniMap extends StatelessWidget {
         child: FlutterMap(
           options: MapOptions(initialCenter: point, initialZoom: 14),
           children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.ouedna.app.v2',
-            ),
+            OuednaMapTiles.standard(),
             MarkerLayer(
               markers: [
                 Marker(

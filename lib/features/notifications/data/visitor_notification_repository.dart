@@ -10,6 +10,7 @@ class VisitorNotificationRepository {
       : _client = client ?? Supabase.instance.client;
 
   static const _readIdsKey = 'ouedna.read_visitor_notification_ids';
+  static const _dismissedIdsKey = 'ouedna.dismissed_visitor_notification_ids';
   final SupabaseClient _client;
 
   Future<List<VisitorNotification>> getPublished({int limit = 50}) async {
@@ -20,9 +21,11 @@ class VisitorNotificationRepository {
         )
         .order('published_at', ascending: false)
         .limit(limit);
+    final dismissed = await _dismissedIds();
     return (rows as List)
         .cast<Map<String, dynamic>>()
         .map(VisitorNotification.fromMap)
+        .where((item) => !dismissed.contains(item.id))
         .toList();
   }
 
@@ -47,6 +50,27 @@ class VisitorNotificationRepository {
       _readIdsKey,
       ids.take(300).toList(growable: false),
     );
+  }
+
+  Future<void> dismissAll(Iterable<String> notificationIds) async {
+    final preferences = await SharedPreferences.getInstance();
+    final dismissed = await _dismissedIds();
+    dismissed.addAll(notificationIds);
+    final read = await readIds();
+    read.removeAll(notificationIds);
+    await preferences.setStringList(
+      _dismissedIdsKey,
+      dismissed.take(300).toList(growable: false),
+    );
+    await preferences.setStringList(
+      _readIdsKey,
+      read.take(300).toList(growable: false),
+    );
+  }
+
+  Future<Set<String>> _dismissedIds() async {
+    final preferences = await SharedPreferences.getInstance();
+    return preferences.getStringList(_dismissedIdsKey)?.toSet() ?? <String>{};
   }
 
   Stream<void> watchPublished() {

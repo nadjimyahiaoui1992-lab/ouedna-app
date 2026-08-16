@@ -25,6 +25,7 @@ class CachedPlaceRepository
 
   static const _placesCacheKey = 'ouedna.cached_places.v1';
   bool _isUsingCachedData = false;
+  final Map<int, Future<List<PlaceGalleryImage>>> _galleryRequests = {};
 
   @override
   bool get isUsingCachedData => _isUsingCachedData;
@@ -104,11 +105,21 @@ class CachedPlaceRepository
   }
 
   @override
-  Future<List<PlaceGalleryImage>> getPlaceGallery(int placeId) =>
-      _remote.getPlaceGallery(placeId);
+  Future<List<PlaceGalleryImage>> getPlaceGallery(int placeId) {
+    if (placeId <= 0) return Future.value(const <PlaceGalleryImage>[]);
+    return _galleryRequests.putIfAbsent(
+      placeId,
+      () => _remote.getPlaceGallery(placeId),
+    );
+  }
 
   @override
-  Stream<void> watchPublishedPlaces() => _remote.watchPublishedPlaces();
+  Stream<void> watchPublishedPlaces() async* {
+    await for (final _ in _remote.watchPublishedPlaces()) {
+      _galleryRequests.clear();
+      yield null;
+    }
+  }
 
   @override
   Future<void> submitVisitorPlace({

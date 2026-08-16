@@ -1,12 +1,17 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/localization/ouedna_localization.dart';
+import '../../../core/location/location_service.dart';
 import '../../../core/storage/favorites_controller.dart';
 import '../../routing/domain/routing_service.dart';
+import '../../routing/presentation/live_navigation_page.dart';
 import '../domain/entities/place.dart';
 import '../domain/repositories/place_repository.dart';
 import 'place_details_page.dart';
+import 'widgets/place_card.dart';
 
 class PlacesPage extends StatefulWidget {
   const PlacesPage({
@@ -26,7 +31,10 @@ class PlacesPage extends StatefulWidget {
 
 class _PlacesPageState extends State<PlacesPage> {
   final _searchController = TextEditingController();
+  final _locationService = LocationService();
   String? _category;
+  LatLng? _myLocation;
+  bool _locating = false;
   late Future<List<Place>> _future;
 
   @override
@@ -36,16 +44,91 @@ class _PlacesPageState extends State<PlacesPage> {
   }
 
   @override
+  void didUpdateWidget(covariant PlacesPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.repository != widget.repository) _reload();
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
   Future<List<Place>> _load() =>
-      widget.repository?.getPublishedPlaces(query: _searchController.text) ??
-      Future.value(const []);
+      widget.repository?.getPublishedPlaces(
+        query: _searchController.text.trim(),
+      ) ??
+      Future.value(const <Place>[]);
 
   void _reload() => setState(() => _future = _load());
+
+  Future<void> _loadUserLocation() async {
+    if (_locating) return;
+    setState(() => _locating = true);
+    try {
+      final Position position = await _locationService.getCurrentPosition();
+      if (!mounted) return;
+      setState(() {
+        _myLocation = LatLng(position.latitude, position.longitude);
+      });
+    } on LocationException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر تحديد موقعك الآن.')),
+      );
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
+  String? _distanceLabel(Place place) {
+    final location = _myLocation;
+    if (location == null || !place.hasCoordinates) return null;
+    final meters = const Distance().as(
+      LengthUnit.Meter,
+      location,
+      LatLng(place.latitude!, place.longitude!),
+    );
+    if (meters < 1000) return '${meters.round()} م';
+    return '${(meters / 1000).toStringAsFixed(1)} كم';
+  }
+
+  void _openPlace(Place place) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PlaceDetailsPage(
+          place: place,
+          repository: widget.repository,
+          favorites: widget.favorites,
+          routingService: widget.routingService,
+        ),
+      ),
+    );
+  }
+
+  void _openNavigation(Place place) {
+    final routingService = widget.routingService;
+    if (routingService == null || !place.hasCoordinates) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LiveNavigationPage(
+          place: place,
+          routingService: routingService,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _sharePlace(Place place) async {
+    await Share.share(
+      '${place.name}\n${place.locationLabel}\n\nhttps://ouedna.vercel.app/place/${place.id}',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +137,15 @@ class _PlacesPageState extends State<PlacesPage> {
       appBar: AppBar(
         title: Text(strings.text('places')),
         actions: [
+          IconButton(
+            onPressed: _locating ? null : _loadUserLocation,
+            tooltip: strings.text('my_location'),
+            icon: Icon(
+              _locating
+                  ? Icons.hourglass_top_rounded
+                  : Icons.my_location_rounded,
+            ),
+          ),
           IconButton(
             onPressed: _reload,
             tooltip: strings.text('refresh'),
@@ -67,11 +159,14 @@ class _PlacesPageState extends State<PlacesPage> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
               controller: _searchController,
+              textDirection: TextDirection.rtl,
               onSubmitted: (_) => _reload(),
               decoration: InputDecoration(
                 labelText: strings.text('search_place'),
+                hintText: 'اسم، تصنيف، منطقة أو وصف',
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: IconButton(
+                  tooltip: strings.text('refresh'),
                   onPressed: _reload,
                   icon: const Icon(Icons.arrow_forward_rounded),
                 ),
@@ -90,7 +185,14 @@ class _PlacesPageState extends State<PlacesPage> {
                 }
                 if (snapshot.hasError) return _ErrorState(onRetry: _reload);
 
-                final places = (snapshot.data ?? const <Place>[])
+                final sourcePlaces = snapshot.data ?? const <Place>[];
+                final categories = sourcePlaces
+                    .map((place) => place.category)
+                    .where((category) => category.trim().isNotEmpty)
+                    .toSet()
+                    .toList()
+                  ..sort();
+                final places = sourcePlaces
                     .where(
                       (place) =>
                           _category == null || place.category == _category,
@@ -98,15 +200,21 @@ class _PlacesPageState extends State<PlacesPage> {
                     .toList(growable: false);
                 if (places.isEmpty) {
                   return Center(
-                      child: Text(strings.text('no_matching_places')));
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Text(
+                        strings.text('no_matching_places'),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
                 }
-                final categories =
-                    places.map((e) => e.category).toSet().toList()..sort();
+
                 return Column(
                   children: [
                     if (categories.isNotEmpty)
                       SizedBox(
-                        height: 48,
+                        height: 52,
                         child: ListView(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -119,13 +227,15 @@ class _PlacesPageState extends State<PlacesPage> {
                             ),
                             ...categories.map(
                               (category) => Padding(
-                                padding:
-                                    const EdgeInsetsDirectional.only(start: 8),
+                                padding: const EdgeInsetsDirectional.only(
+                                  start: 8,
+                                ),
                                 child: ChoiceChip(
                                   label: AutoTranslatedText(category),
                                   selected: _category == category,
-                                  onSelected: (_) =>
-                                      setState(() => _category = category),
+                                  onSelected: (_) => setState(
+                                    () => _category = category,
+                                  ),
                                 ),
                               ),
                             ),
@@ -140,20 +250,19 @@ class _PlacesPageState extends State<PlacesPage> {
                           itemCount: places.length,
                           separatorBuilder: (_, __) =>
                               const SizedBox(height: 12),
-                          itemBuilder: (context, index) => _PlaceTile(
-                            place: places[index],
-                            favorites: widget.favorites,
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => PlaceDetailsPage(
-                                  place: places[index],
-                                  repository: widget.repository,
-                                  favorites: widget.favorites,
-                                  routingService: widget.routingService,
-                                ),
-                              ),
-                            ),
-                          ),
+                          itemBuilder: (context, index) {
+                            final place = places[index];
+                            return PlaceCard(
+                              place: place,
+                              favorites: widget.favorites,
+                              distanceLabel: _distanceLabel(place),
+                              onNavigate: widget.routingService == null
+                                  ? null
+                                  : () => _openNavigation(place),
+                              onShare: () => _sharePlace(place),
+                              onTap: () => _openPlace(place),
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -166,97 +275,6 @@ class _PlacesPageState extends State<PlacesPage> {
       ),
     );
   }
-}
-
-class _PlaceTile extends StatelessWidget {
-  const _PlaceTile({
-    required this.place,
-    required this.favorites,
-    required this.onTap,
-  });
-
-  final Place place;
-  final FavoritesController favorites;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Card(
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Row(
-            children: [
-              SizedBox(
-                width: 118,
-                height: 118,
-                child: place.imageUrl?.isNotEmpty == true
-                    ? CachedNetworkImage(
-                        imageUrl: place.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => const ColoredBox(
-                          color: Color(0xFFE4ECE8),
-                          child: Icon(Icons.landscape_outlined),
-                        ),
-                      )
-                    : const ColoredBox(
-                        color: Color(0xFFE4ECE8),
-                        child: Icon(Icons.landscape_outlined),
-                      ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: AutoTranslatedText(
-                              place.name,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w900),
-                            ),
-                          ),
-                          AnimatedBuilder(
-                            animation: favorites,
-                            builder: (_, __) => Icon(
-                              favorites.isFavorite(place.id)
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              color: favorites.isFavorite(place.id)
-                                  ? Colors.red
-                                  : Colors.grey,
-                              size: 20,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      AutoTranslatedText(
-                        place.category,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      AutoTranslatedText(
-                        place.locationLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
 }
 
 class _ErrorState extends StatelessWidget {

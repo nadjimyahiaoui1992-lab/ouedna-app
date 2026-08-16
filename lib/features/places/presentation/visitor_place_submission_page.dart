@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/widgets/ouedna_map_tiles.dart';
 import '../domain/repositories/place_repository.dart';
 
 class VisitorPlaceSubmissionPage extends StatefulWidget {
@@ -35,9 +36,11 @@ class _VisitorPlaceSubmissionPageState
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _addressController = TextEditingController();
+  final _subCategoryController = TextEditingController();
   final _municipalityController = TextEditingController(text: 'الوادي');
   final _phoneController = TextEditingController();
   final _hoursController = TextEditingController();
+  final _mapLinkController = TextEditingController();
   final _picker = ImagePicker();
 
   String _category = _categories.first;
@@ -50,9 +53,11 @@ class _VisitorPlaceSubmissionPageState
     _nameController.dispose();
     _descriptionController.dispose();
     _addressController.dispose();
+    _subCategoryController.dispose();
     _municipalityController.dispose();
     _phoneController.dispose();
     _hoursController.dispose();
+    _mapLinkController.dispose();
     super.dispose();
   }
 
@@ -77,7 +82,14 @@ class _VisitorPlaceSubmissionPageState
   Future<void> _submit() async {
     if (_sending) return;
     if (!_formKey.currentState!.validate()) return;
-    if (_point == null) {
+    final point = _point;
+    if (point == null ||
+        !point.latitude.isFinite ||
+        !point.longitude.isFinite ||
+        point.latitude < -90 ||
+        point.latitude > 90 ||
+        point.longitude < -180 ||
+        point.longitude > 180) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('يرجى تحديد موقع المعلم بالدبوس على الخريطة.')),
@@ -96,8 +108,14 @@ class _VisitorPlaceSubmissionPageState
         address: _addressController.text,
         municipality: _municipalityController.text,
         phone: _phoneController.text,
-        latitude: _point!.latitude,
-        longitude: _point!.longitude,
+        subCategory: _subCategoryController.text.trim().isEmpty
+            ? null
+            : _subCategoryController.text.trim(),
+        mapLink: _mapLinkController.text.trim().isEmpty
+            ? null
+            : _mapLinkController.text.trim(),
+        latitude: point.latitude,
+        longitude: point.longitude,
         openingHours: _hoursController.text,
         imageBytes: bytes,
         imageFileName: _image?.name,
@@ -191,6 +209,12 @@ class _VisitorPlaceSubmissionPageState
               ),
               const SizedBox(height: 14),
               _InputField(
+                controller: _subCategoryController,
+                label: 'تصنيف فرعي (اختياري)',
+                icon: Icons.label_outline,
+              ),
+              const SizedBox(height: 14),
+              _InputField(
                 controller: _descriptionController,
                 label: 'وصف مختصر ومعلومات مفيدة',
                 icon: Icons.description_outlined,
@@ -214,6 +238,13 @@ class _VisitorPlaceSubmissionPageState
               _LocationCard(point: _point, onTap: _pickPoint),
               const SizedBox(height: 14),
               _InputField(
+                controller: _mapLinkController,
+                label: 'رابط خرائط أو Plus Code (اختياري)',
+                icon: Icons.link_rounded,
+                keyboardType: TextInputType.url,
+              ),
+              const SizedBox(height: 14),
+              _InputField(
                 controller: _phoneController,
                 label: 'رقم الهاتف (اختياري)',
                 icon: Icons.phone_outlined,
@@ -227,6 +258,25 @@ class _VisitorPlaceSubmissionPageState
               ),
               const SizedBox(height: 24),
               _SectionTitle('صورة المكان'),
+              if (_image != null)
+                FutureBuilder<Uint8List>(
+                  future: _image!.readAsBytes(),
+                  builder: (context, snapshot) => ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: snapshot.hasData
+                          ? Image.memory(snapshot.data!, fit: BoxFit.cover)
+                          : const ColoredBox(
+                              color: Color(0xFFE9EFEA),
+                              child: Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              if (_image != null) const SizedBox(height: 10),
               OutlinedButton.icon(
                 onPressed: _pickImage,
                 icon: Icon(_image == null
@@ -419,10 +469,7 @@ class _VisitorMapPickerState extends State<_VisitorMapPicker> {
                 onTap: (_, point) => setState(() => _point = point),
               ),
               children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.ouedna.app.v2',
-                ),
+                OuednaMapTiles.standard(),
                 MarkerLayer(
                   markers: [
                     Marker(

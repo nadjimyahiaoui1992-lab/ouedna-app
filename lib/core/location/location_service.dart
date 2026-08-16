@@ -16,6 +16,26 @@ class LocationService {
 
   /// يحصل على قراءة GPS حديثة. لا نستعمل آخر موقع مخزن للجهاز لأن ذلك قد
   /// ينتج مسافات بعيدة وغير واقعية عند بدء رحلة جديدة.
+  Future<bool> requestPermission() async {
+    if (!await Geolocator.isLocationServiceEnabled()) return false;
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    return permission != LocationPermission.denied &&
+        permission != LocationPermission.deniedForever;
+  }
+
+  Future<bool> requestForEntry() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      await Geolocator.openLocationSettings();
+      return false;
+    }
+    final allowed = await requestPermission();
+    if (!allowed) await Geolocator.openAppSettings();
+    return allowed;
+  }
+
   Future<Position> getCurrentPosition() async {
     await _ensureLocationAccess();
     try {

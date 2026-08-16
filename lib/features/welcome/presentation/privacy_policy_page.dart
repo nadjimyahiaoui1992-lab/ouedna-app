@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PrivacyPolicyPage extends StatelessWidget {
   const PrivacyPolicyPage({super.key});
@@ -28,7 +29,25 @@ class PrivacyPolicyPage extends StatelessWidget {
                   'نستخدم تقنيات Supabase السحابية لحماية البيانات المرسلة. في التوزيع المباشر، نتحقق من بصمة SHA-256 لملف APK قبل فتح مثبّت أندرويد، ولا يتم تثبيت أي تحديث دون تأكيد المستخدم.'),
               _buildSection('التواصل',
                   'إذا كان لديك أي استفسار حول سياسة الخصوصية، يمكنك التواصل معنا عبر لوحة الإدارة أو من خلال قنواتنا الرسمية.'),
-              const SizedBox(height: 40),
+              const SizedBox(height: 4),
+              Text(
+                'النسخة العامة من سياسة الخصوصية:',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              TextButton.icon(
+                onPressed: () => launchUrl(
+                  Uri.parse('https://ouedna.vercel.app/privacy'),
+                  mode: LaunchMode.externalApplication,
+                ),
+                icon: const Icon(Icons.open_in_new_rounded),
+                label: const Flexible(
+                  child: Text('https://ouedna.vercel.app/privacy'),
+                ),
+              ),
+              const SizedBox(height: 36),
               const Center(
                 child: Text('آخر تحديث: 13 أغسطس 2026',
                     style: TextStyle(color: Colors.grey, fontSize: 12)),

@@ -13,6 +13,7 @@ android/app/*.keystore
 .pub/
 .pub-cache/
 coverage/
+artifacts/
 ios/Pods/
 ios/Flutter/ephemeral/
 macos/Flutter/ephemeral/

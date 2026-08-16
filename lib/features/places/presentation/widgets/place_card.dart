@@ -11,12 +11,18 @@ class PlaceCard extends StatelessWidget {
     required this.favorites,
     required this.onTap,
     this.compact = false,
+    this.distanceLabel,
+    this.onNavigate,
+    this.onShare,
   });
 
   final Place place;
   final FavoritesController favorites;
   final VoidCallback onTap;
   final bool compact;
+  final String? distanceLabel;
+  final VoidCallback? onNavigate;
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -73,13 +79,13 @@ class PlaceCard extends StatelessWidget {
       );
 
   Widget _listCard(BuildContext context, ColorScheme scheme) => SizedBox(
-        height: 142,
+        height: 164,
         child: Row(
           children: [
             SizedBox(
                 width: 136,
                 height: double.infinity,
-                child: _image(context, height: 142)),
+                child: _image(context, height: 164)),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(14, 13, 10, 12),
@@ -137,6 +143,29 @@ class PlaceCard extends StatelessWidget {
                             style: Theme.of(context).textTheme.labelSmall,
                           ),
                         ),
+                        if (distanceLabel?.isNotEmpty == true)
+                          Text(
+                            distanceLabel!,
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                        if (onShare != null)
+                          IconButton(
+                            tooltip: 'مشاركة',
+                            onPressed: onShare,
+                            visualDensity: VisualDensity.compact,
+                            icon: const Icon(Icons.share_outlined, size: 18),
+                          ),
+                        if (onNavigate != null)
+                          IconButton(
+                            tooltip: 'الاتجاهات',
+                            onPressed: onNavigate,
+                            visualDensity: VisualDensity.compact,
+                            icon:
+                                const Icon(Icons.directions_outlined, size: 19),
+                          ),
                       ],
                     ),
                   ],

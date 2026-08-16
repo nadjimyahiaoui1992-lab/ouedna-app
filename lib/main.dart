@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -46,17 +47,31 @@ Future<void> main() async {
   final preferences = await SharedPreferences.getInstance();
   final favoritesController = FavoritesController(preferences);
   final languageController = await AppLanguageController.load(preferences);
+  final routingService = OsrmRoutingService();
+  final backendFuture = _loadBackend(
+    preferences: preferences,
+    languageController: languageController,
+  );
 
-  PlaceRepository? placeRepository;
-  CommunityRepository? communityRepository;
-  TourGuideRepository? tourGuideRepository;
-  final RoutingService routingService = OsrmRoutingService();
+  runApp(
+    _BootstrapApp(
+      backendFuture: backendFuture,
+      preferences: preferences,
+      favoritesController: favoritesController,
+      languageController: languageController,
+      routingService: routingService,
+    ),
+  );
+}
 
+Future<_BackendBundle?> _loadBackend({
+  required SharedPreferences preferences,
+  required AppLanguageController languageController,
+}) async {
   try {
     await Firebase.initializeApp();
   } catch (_) {
-    // Firebase Analytics et les notifications restent optionnels lorsque la
-    // configuration Android Firebase n'est pas encore incluse.
+    // Firebase is optional for browsing and local permission prompts.
   }
 
   try {
@@ -66,28 +81,66 @@ Future<void> main() async {
       authOptions: const FlutterAuthClientOptions(autoRefreshToken: true),
     );
     final client = Supabase.instance.client;
-    placeRepository = CachedPlaceRepository(
-      remote: SupabasePlaceRepository(client),
-      preferences: preferences,
-    );
-    communityRepository = SupabaseCommunityRepository(client);
-    tourGuideRepository = SupabaseTourGuideRepository(client);
     unawaited(
       AppMetricsService(preferences: preferences, client: client).recordStartup(
         localeCode: languageController.language.code,
       ),
     );
-  } catch (_) {}
+    return _BackendBundle(
+      placeRepository: CachedPlaceRepository(
+        remote: SupabasePlaceRepository(client),
+        preferences: preferences,
+      ),
+      communityRepository: SupabaseCommunityRepository(client),
+      tourGuideRepository: SupabaseTourGuideRepository(client),
+    );
+  } catch (_) {
+    return null;
+  }
+}
 
-  runApp(
-    OuednaApp(
-      placeRepository: placeRepository,
-      communityRepository: communityRepository,
-      tourGuideRepository: tourGuideRepository,
-      routingService: routingService,
-      favoritesController: favoritesController,
-      languageController: languageController,
-      isBackendConfigured: placeRepository != null,
-    ),
-  );
+class _BootstrapApp extends StatelessWidget {
+  const _BootstrapApp({
+    required this.backendFuture,
+    required this.preferences,
+    required this.favoritesController,
+    required this.languageController,
+    required this.routingService,
+  });
+
+  final Future<_BackendBundle?> backendFuture;
+  final SharedPreferences preferences;
+  final FavoritesController favoritesController;
+  final AppLanguageController languageController;
+  final RoutingService routingService;
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<_BackendBundle?>(
+        future: backendFuture,
+        builder: (context, snapshot) {
+          final backend = snapshot.data;
+          return OuednaApp(
+            placeRepository: backend?.placeRepository,
+            communityRepository: backend?.communityRepository,
+            tourGuideRepository: backend?.tourGuideRepository,
+            routingService: routingService,
+            favoritesController: favoritesController,
+            languageController: languageController,
+            preferences: preferences,
+            isBackendConfigured: backend != null,
+          );
+        },
+      );
+}
+
+class _BackendBundle {
+  const _BackendBundle({
+    required this.placeRepository,
+    required this.communityRepository,
+    required this.tourGuideRepository,
+  });
+
+  final PlaceRepository placeRepository;
+  final CommunityRepository communityRepository;
+  final TourGuideRepository tourGuideRepository;
 }
