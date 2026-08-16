@@ -41,6 +41,8 @@ class OuednaNotificationService {
 
   StreamSubscription<String>? _tokenRefreshSubscription;
   bool _initialized = false;
+  bool _firebaseReady = false;
+  bool _messagingReady = false;
 
   Future<void> initialize(AppLanguageController languageController) async {
     if (_initialized) return;
@@ -48,6 +50,7 @@ class OuednaNotificationService {
 
     try {
       await Firebase.initializeApp();
+      _firebaseReady = true;
       FirebaseMessaging.onBackgroundMessage(ouednaFirebaseBackgroundHandler);
 
       const android = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -67,32 +70,72 @@ class OuednaNotificationService {
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(_androidChannel);
 
+      final permissionSettings =
+          await FirebaseMessaging.instance.getNotificationSettings();
+      if (permissionSettings.authorizationStatus ==
+              AuthorizationStatus.authorized ||
+          permissionSettings.authorizationStatus ==
+              AuthorizationStatus.provisional) {
+        await _startMessaging(languageController);
+      }
+    } catch (_) {
+      // The tourism application remains usable when a notification provider is
+      // not configured or the visitor declines notification permission.
+    }
+  }
+
+  Future<bool> requestPermission(
+      AppLanguageController languageController) async {
+    var localAllowed = true;
+    try {
+      localAllowed = await _localNotifications
+              .resolvePlatformSpecificImplementation<
+                  AndroidFlutterLocalNotificationsPlugin>()
+              ?.requestNotificationsPermission() ??
+          true;
+    } catch (_) {}
+
+    if (!_firebaseReady) {
+      try {
+        await Firebase.initializeApp();
+        _firebaseReady = true;
+      } catch (_) {
+        return localAllowed;
+      }
+    }
+    try {
       final permission = await FirebaseMessaging.instance.requestPermission(
         alert: true,
         badge: true,
         sound: true,
       );
-      if (permission.authorizationStatus == AuthorizationStatus.denied) return;
-
-      FirebaseMessaging.onMessage
-          .listen((message) => _showForegroundMessage(message));
-      FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenMessage);
-      final initialMessage =
-          await FirebaseMessaging.instance.getInitialMessage();
-      if (initialMessage != null) _handleOpenMessage(initialMessage);
-
-      final token = await FirebaseMessaging.instance.getToken();
-      if (token != null) {
-        await _registerDevice(token, languageController.language);
-      }
-      _tokenRefreshSubscription =
-          FirebaseMessaging.instance.onTokenRefresh.listen(
-        (token) => _registerDevice(token, languageController.language),
-      );
+      final allowed =
+          permission.authorizationStatus == AuthorizationStatus.authorized ||
+              permission.authorizationStatus == AuthorizationStatus.provisional;
+      if (allowed) await _startMessaging(languageController);
+      return localAllowed || allowed;
     } catch (_) {
-      // The tourism application remains usable when a notification provider is
-      // not configured or the visitor declines notification permission.
+      return false;
     }
+  }
+
+  Future<void> _startMessaging(AppLanguageController languageController) async {
+    if (_messagingReady) return;
+    _messagingReady = true;
+    FirebaseMessaging.onMessage
+        .listen((message) => _showForegroundMessage(message));
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenMessage);
+    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) _handleOpenMessage(initialMessage);
+
+    final token = await FirebaseMessaging.instance.getToken();
+    if (token != null) {
+      await _registerDevice(token, languageController.language);
+    }
+    _tokenRefreshSubscription =
+        FirebaseMessaging.instance.onTokenRefresh.listen(
+      (token) => _registerDevice(token, languageController.language),
+    );
   }
 
   Future<void> _showForegroundMessage(RemoteMessage message) async {

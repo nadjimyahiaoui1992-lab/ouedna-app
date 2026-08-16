@@ -87,6 +87,7 @@ Future<void> main() async {
       routingService: routingService,
       favoritesController: favoritesController,
       languageController: languageController,
+      preferences: preferences,
       isBackendConfigured: placeRepository != null,
     ),
   );
