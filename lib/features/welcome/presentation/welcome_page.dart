@@ -41,7 +41,7 @@ class WelcomePage extends StatelessWidget {
             ),
           ),
           SafeArea(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 22, 24, 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,7 +72,7 @@ class WelcomePage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const Spacer(flex: 4),
+                  const SizedBox(height: 32),
                   Text(
                     strings.appName,
                     style: const TextStyle(
@@ -115,7 +115,7 @@ class WelcomePage extends StatelessWidget {
                     icon: Icons.map_outlined,
                     text: strings.text('interactive_maps'),
                   ),
-                  const Spacer(flex: 3),
+                  const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
