@@ -193,13 +193,21 @@ class _OuednaAppState extends State<OuednaApp> {
 
   Future<void> _maybePromptForEntryPermissions() async {
     final preferences = widget.preferences;
-    if (preferences == null || !widget.isBackendConfigured) return;
+    if (preferences == null) return;
+    const promptVersion = 2;
     final now = DateTime.now().millisecondsSinceEpoch;
+    final lastVersion =
+        preferences.getInt('ouedna.entry_permissions_prompt_version');
     final lastPrompt =
         preferences.getInt('ouedna.entry_permissions_prompted_at');
     const cooldown = Duration(days: 7);
-    if (lastPrompt != null && now - lastPrompt < cooldown.inMilliseconds)
+    if (lastVersion == promptVersion &&
+        lastPrompt != null &&
+        now - lastPrompt < cooldown.inMilliseconds) {
       return;
+    }
+    await preferences.setInt(
+        'ouedna.entry_permissions_prompt_version', promptVersion);
     await preferences.setInt('ouedna.entry_permissions_prompted_at', now);
     if (!mounted) return;
     await showDialog<void>(
