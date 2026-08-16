@@ -344,7 +344,8 @@ class _SoufMapPageState extends State<SoufMapPage> {
                           ? null
                           : _distanceMeters(
                               _myLocation!,
-                              LatLng(selectedPlace.latitude!, selectedPlace.longitude!),
+                              LatLng(selectedPlace.latitude!,
+                                  selectedPlace.longitude!),
                             ),
                       onDismiss: _dismissPlaceCard,
                       onDetails: () => _openPlace(selectedPlace),
@@ -717,14 +718,16 @@ class _PlacePopupCard extends StatelessWidget {
                           distanceMeters! < 1000
                               ? 'يبعد نحو ${distanceMeters!.round()} م عنك'
                               : 'يبعد نحو ${(distanceMeters! / 1000).toStringAsFixed(1)} كم عنك',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                          style: const TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w700),
                         ),
                       if (place.openingHours?.trim().isNotEmpty == true)
                         Text(
                           'ساعات العمل: ${place.openingHours!.trim()}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 10, color: Colors.black54),
+                          style: const TextStyle(
+                              fontSize: 10, color: Colors.black54),
                         ),
                       const Spacer(),
                       Row(

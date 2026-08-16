@@ -11,8 +11,7 @@ class VisitorNotificationRepository {
 
   static const _readIdsKey = 'ouedna.read_visitor_notification_ids';
   static const _hiddenIdsKey = 'ouedna.hidden_visitor_notification_ids';
-  static const generalNotificationsKey =
-      'ouedna.general_notifications_enabled';
+  static const generalNotificationsKey = 'ouedna.general_notifications_enabled';
   final SupabaseClient _client;
 
   Future<List<VisitorNotification>> getPublished({int limit = 50}) async {

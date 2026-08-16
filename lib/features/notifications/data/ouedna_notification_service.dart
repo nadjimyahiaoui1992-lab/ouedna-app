@@ -95,8 +95,8 @@ class OuednaNotificationService {
         message.data['type'] == 'app_update';
     if (!isEssential) {
       final preferences = await SharedPreferences.getInstance();
-      if (!(preferences.getBool(
-              'ouedna.general_notifications_enabled') ?? true)) {
+      if (!(preferences.getBool('ouedna.general_notifications_enabled') ??
+          true)) {
         return;
       }
     }

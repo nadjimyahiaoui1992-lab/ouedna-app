@@ -241,7 +241,9 @@ class _OuednaAppState extends State<OuednaApp> {
         final granted = await LocationService().requestPermission();
         if (!granted && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('يمكنك متابعة التصفح، وتفعيل الموقع لاحقاً من الخريطة.')),
+            const SnackBar(
+                content: Text(
+                    'يمكنك متابعة التصفح، وتفعيل الموقع لاحقاً من الخريطة.')),
           );
         }
       }
@@ -278,8 +280,8 @@ class _OuednaAppState extends State<OuednaApp> {
   }
 
   Future<void> _showNotificationSettings() async {
-    var enabled = await VisitorNotificationRepository()
-        .generalNotificationsEnabled();
+    var enabled =
+        await VisitorNotificationRepository().generalNotificationsEnabled();
     if (!mounted) return;
     await showDialog<void>(
       context: context,
@@ -491,7 +493,8 @@ class _OuednaAppState extends State<OuednaApp> {
                                         value: _MenuAction.notifications,
                                         child: Row(
                                           children: [
-                                            const Icon(Icons.notifications_outlined),
+                                            const Icon(
+                                                Icons.notifications_outlined),
                                             const SizedBox(width: 10),
                                             const Text('الإشعارات'),
                                           ],

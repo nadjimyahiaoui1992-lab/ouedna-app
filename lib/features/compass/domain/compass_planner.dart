@@ -18,9 +18,8 @@ class CompassPlanner {
     }).toList();
 
     final origin = preferences.origin;
-    final originPoint = origin == null
-        ? null
-        : LatLngLike(origin.latitude, origin.longitude);
+    final originPoint =
+        origin == null ? null : LatLngLike(origin.latitude, origin.longitude);
     candidates.sort((a, b) {
       if (originPoint != null) {
         final distanceCompare = _distanceSquared(a, originPoint)
@@ -41,8 +40,8 @@ class CompassPlanner {
     if (selected.isEmpty) return const CompassItinerary(stops: []);
 
     final now = DateTime.now();
-    final requestedStart = preferences.startAt ??
-        DateTime(now.year, now.month, now.day, 9, 0);
+    final requestedStart =
+        preferences.startAt ?? DateTime(now.year, now.month, now.day, 9, 0);
     var cursor = requestedStart;
     LatLngLike? previous = originPoint;
     final stops = <CompassStop>[];

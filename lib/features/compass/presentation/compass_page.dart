@@ -147,7 +147,8 @@ class _CompassPageState extends State<CompassPage> {
     );
     if (!mounted || time == null) return;
     setState(() {
-      _startAt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      _startAt =
+          DateTime(date.year, date.month, date.day, time.hour, time.minute);
     });
   }
 
@@ -506,7 +507,8 @@ class _ItineraryResult extends StatelessWidget {
           '${itinerary.stops.length} محطات من المعالم المنشورة فقط · ${_formatDate(itinerary.startAt)}',
         ),
         const SizedBox(height: 4),
-        const Text('الأوقات تقديرية حسب الإحداثيات المنشورة. تحقّق من ساعات العمل قبل الانطلاق.'),
+        const Text(
+            'الأوقات تقديرية حسب الإحداثيات المنشورة. تحقّق من ساعات العمل قبل الانطلاق.'),
         const SizedBox(height: 14),
         ...itinerary.stops.map(
           (stop) => Padding(
