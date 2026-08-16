@@ -58,6 +58,12 @@ class _SoufMapPageState extends State<SoufMapPage> {
   }
 
   @override
+  void didUpdateWidget(covariant SoufMapPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.repository != widget.repository) _reload();
+  }
+
+  @override
   void dispose() {
     _placePageController.dispose();
     _searchController.dispose();

@@ -31,6 +31,14 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   @override
+  void didUpdateWidget(covariant CommunityPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.repository != widget.repository) {
+      setState(() => _future = _load());
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final archiveEnabled = widget.repository != null;
     return Scaffold(

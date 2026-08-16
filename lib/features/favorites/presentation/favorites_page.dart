@@ -34,6 +34,14 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 
   @override
+  void didUpdateWidget(covariant FavoritesPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.repository != widget.repository) {
+      setState(() => _future = _load());
+    }
+  }
+
+  @override
   void dispose() {
     widget.favorites.removeListener(_onFavoritesChanged);
     super.dispose();

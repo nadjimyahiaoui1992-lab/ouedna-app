@@ -66,6 +66,17 @@ class _CompassPageState extends State<CompassPage> {
   }
 
   @override
+  void didUpdateWidget(covariant CompassPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.repository != widget.repository) {
+      _subscription?.cancel();
+      _subscription =
+          widget.repository?.watchPublishedPlaces().listen((_) => _reload());
+      _reload();
+    }
+  }
+
+  @override
   void dispose() {
     _subscription?.cancel();
     super.dispose();

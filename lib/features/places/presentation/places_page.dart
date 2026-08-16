@@ -44,6 +44,12 @@ class _PlacesPageState extends State<PlacesPage> {
   }
 
   @override
+  void didUpdateWidget(covariant PlacesPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.repository != widget.repository) _reload();
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
