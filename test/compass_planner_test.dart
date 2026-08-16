@@ -59,7 +59,10 @@ void main() {
     );
 
     expect(itinerary.startAt, isNotNull);
-    expect(itinerary.stops.first.arrivalAt!.isAfter(start), isTrue);
+    expect(
+      itinerary.stops.first.arrivalAt!.isAtSameMomentAs(start),
+      isTrue,
+    );
     expect(
       itinerary.stops[1].arrivalAt!.isAfter(itinerary.stops.first.departureAt!),
       isTrue,
