@@ -42,7 +42,7 @@ class WelcomePage extends StatelessWidget {
           ),
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 22, 24, 28),
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -72,12 +72,12 @@ class WelcomePage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
                   Text(
                     strings.appName,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 48,
+                      fontSize: 42,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -1.0,
                     ),
@@ -86,43 +86,43 @@ class WelcomePage extends StatelessWidget {
                     strings.text('desert_heart'),
                     style: const TextStyle(
                       color: Color(0xFFD58B2D),
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.5,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   Text(
                     strings.text('welcome_intro'),
                     style: const TextStyle(
                       color: Color(0xFFF6E6CA),
-                      fontSize: 15,
-                      height: 1.6,
+                      fontSize: 14,
+                      height: 1.45,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 14),
                   _WelcomeValue(
                     icon: Icons.route_outlined,
                     text: strings.text('my_itinerary'),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   _WelcomeValue(
                     icon: Icons.history_edu_rounded,
                     text: strings.text('heritage_archive'),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   _WelcomeValue(
                     icon: Icons.map_outlined,
                     text: strings.text('interactive_maps'),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFFD58B2D),
                         foregroundColor: const Color(0xFF30241B),
-                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
