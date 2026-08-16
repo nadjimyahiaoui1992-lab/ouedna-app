@@ -71,11 +71,21 @@ class LocationService {
     }
   }
 
+  Future<bool> requestPermission() async {
+    if (!await Geolocator.isLocationServiceEnabled()) return false;
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    return permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always;
+  }
+
   Future<void> _ensureLocationAccess() async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       throw const LocationException(
-        'فعّل خدمة الموقع من إعدادات الهاتف ثم أعد المحاولة.',
+        'فعّل الموقع للحصول على موقعك والمسافة والمسار.',
       );
     }
 
@@ -84,13 +94,13 @@ class LocationService {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
         throw const LocationException(
-          'لم يتم السماح للتطبيق بالوصول إلى موقعك.',
+          'لم يتم السماح للتطبيق بالوصول إلى موقعك. يمكنك متابعة التصفح دون GPS.',
         );
       }
     }
     if (permission == LocationPermission.deniedForever) {
       throw const LocationException(
-        'صلاحية الموقع مرفوضة نهائياً. فعّلها من إعدادات التطبيق.',
+        'صلاحية الموقع مرفوضة نهائياً. فعّلها من إعدادات التطبيق عند الحاجة.',
       );
     }
   }

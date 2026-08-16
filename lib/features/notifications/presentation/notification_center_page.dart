@@ -32,6 +32,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
   StreamSubscription<void>? _subscription;
   List<VisitorNotification> _items = const [];
   Set<String> _readIds = const {};
+  Set<String> _hiddenIds = const {};
   bool _loading = true;
 
   @override
@@ -52,11 +53,16 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
       final result = await Future.wait([
         _notifications.getPublished(),
         _notifications.readIds(),
+        _notifications.hiddenIds(),
       ]);
       if (mounted) {
+        final hidden = result[2] as Set<String>;
         setState(() {
-          _items = result[0] as List<VisitorNotification>;
+          _items = (result[0] as List<VisitorNotification>)
+              .where((item) => !hidden.contains(item.id))
+              .toList(growable: false);
           _readIds = result[1] as Set<String>;
+          _hiddenIds = hidden;
           _loading = false;
         });
       }
@@ -69,6 +75,46 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     await _notifications.markAllRead(_items.map((item) => item.id));
     if (mounted)
       setState(() => _readIds = _items.map((item) => item.id).toSet());
+  }
+
+  Future<void> _deleteOne(VisitorNotification item) async {
+    await _notifications.hide(item.id);
+    if (mounted) {
+      setState(() {
+        _hiddenIds = {..._hiddenIds, item.id};
+        _items = _items.where((current) => current.id != item.id).toList();
+      });
+    }
+  }
+
+  Future<void> _deleteAll() async {
+    if (_items.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف الكل'),
+        content: const Text('هل تريد حذف جميع الإشعارات؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final ids = _items.map((item) => item.id).toList(growable: false);
+    await _notifications.hideAll(ids);
+    if (mounted) {
+      setState(() {
+        _hiddenIds = {..._hiddenIds, ...ids};
+        _items = const [];
+      });
+    }
   }
 
   Future<void> _open(VisitorNotification item) async {
@@ -123,7 +169,13 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
             TextButton.icon(
               onPressed: _markAllRead,
               icon: const Icon(Icons.done_all_rounded),
-              label: const Text('قراءة الكل'),
+              label: const Text('تحديد الكل كمقروء'),
+            ),
+          if (_items.isNotEmpty)
+            IconButton(
+              onPressed: _deleteAll,
+              tooltip: 'حذف الكل',
+              icon: const Icon(Icons.delete_sweep_outlined),
             ),
         ],
       ),
@@ -143,6 +195,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                         item: item,
                         isRead: _readIds.contains(item.id),
                         onTap: () => _open(item),
+                        onDelete: () => _deleteOne(item),
                       );
                     },
                   ),
@@ -156,11 +209,13 @@ class _NotificationTile extends StatelessWidget {
     required this.item,
     required this.isRead,
     required this.onTap,
+    required this.onDelete,
   });
 
   final VisitorNotification item;
   final bool isRead;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -246,8 +301,18 @@ class _NotificationTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (item.target != VisitorNotificationTarget.none)
-                Icon(Icons.chevron_left_rounded, color: scheme.outline),
+              Column(
+                children: [
+                  if (item.target != VisitorNotificationTarget.none)
+                    Icon(Icons.chevron_left_rounded, color: scheme.outline),
+                  IconButton(
+                    onPressed: onDelete,
+                    tooltip: 'حذف الإشعار',
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

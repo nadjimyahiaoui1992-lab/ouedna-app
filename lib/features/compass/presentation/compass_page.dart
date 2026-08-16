@@ -39,6 +39,7 @@ class _CompassPageState extends State<CompassPage> {
   Future<_CompassData>? _future;
   StreamSubscription<void>? _subscription;
   JourneyLength _length = JourneyLength.halfDay;
+  late DateTime _startAt;
   LatLng? _origin;
   CompassItinerary? _itinerary;
   bool _locating = false;
@@ -47,6 +48,8 @@ class _CompassPageState extends State<CompassPage> {
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _startAt = DateTime(now.year, now.month, now.day, 9);
     _reload();
     _subscription =
         widget.repository?.watchPublishedPlaces().listen((_) => _reload());
@@ -122,6 +125,32 @@ class _CompassPageState extends State<CompassPage> {
     }
   }
 
+  Future<void> _pickStartAt() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final date = await showDatePicker(
+      context: context,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 365)),
+      initialDate: _startAt.isBefore(today) ? today : _startAt,
+      helpText: 'اختر يوم الرحلة',
+      cancelText: 'إلغاء',
+      confirmText: 'متابعة',
+    );
+    if (!mounted || date == null) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_startAt),
+      helpText: 'اختر وقت الانطلاق',
+      cancelText: 'إلغاء',
+      confirmText: 'حفظ',
+    );
+    if (!mounted || time == null) return;
+    setState(() {
+      _startAt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    });
+  }
+
   void _buildItinerary(List<Place> places) => setState(() {
         _itinerary = _planner.compose(
           places: places,
@@ -129,6 +158,7 @@ class _CompassPageState extends State<CompassPage> {
             length: _length,
             categories: _categories,
             origin: _origin,
+            startAt: _startAt,
           ),
         );
       });
@@ -213,6 +243,8 @@ class _CompassPageState extends State<CompassPage> {
                   onSelectionChanged: (value) =>
                       setState(() => _length = value.first),
                 ),
+                const SizedBox(height: 22),
+                _StartTimeCard(startAt: _startAt, onChange: _pickStartAt),
                 const SizedBox(height: 22),
                 Row(
                   children: [
@@ -361,8 +393,8 @@ class _CompassHero extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       locationEnabled
-                          ? 'سنرتب المعالم المنشورة وفق اهتماماتك وموقعك الحالي.'
-                          : 'اختر اهتماماتك لنرتب لك تجربة من المعالم المنشورة.',
+                          ? 'سنرتب المعالم المنشورة وفق اهتماماتك وموقعك الحالي، مع أوقات انتقال وزيارة واضحة.'
+                          : 'اختر اهتماماتك ووقت الانطلاق لنرتب لك تجربة من المعالم المنشورة.',
                       style: const TextStyle(
                           color: Color(0xFFF4EBDD), height: 1.4),
                     ),
@@ -370,6 +402,31 @@ class _CompassHero extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      );
+}
+
+class _StartTimeCard extends StatelessWidget {
+  const _StartTimeCard({required this.startAt, required this.onChange});
+
+  final DateTime startAt;
+  final VoidCallback onChange;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: ListTile(
+          leading: const Icon(Icons.schedule_rounded),
+          title: const Text('موعد بداية الرحلة'),
+          subtitle: Text('${_formatDate(startAt)} · ${_formatTime(startAt)}'),
+          trailing: OutlinedButton.icon(
+            onPressed: onChange,
+            icon: const Icon(Icons.edit_calendar_outlined, size: 18),
+            label: const Text('تغيير'),
           ),
         ),
       );
@@ -445,7 +502,11 @@ class _ItineraryResult extends StatelessWidget {
                 .titleLarge
                 ?.copyWith(fontWeight: FontWeight.w900)),
         const SizedBox(height: 4),
-        Text('${itinerary.stops.length} محطات من المعالم المنشورة فقط.'),
+        Text(
+          '${itinerary.stops.length} محطات من المعالم المنشورة فقط · ${_formatDate(itinerary.startAt)}',
+        ),
+        const SizedBox(height: 4),
+        const Text('الأوقات تقديرية حسب الإحداثيات المنشورة. تحقّق من ساعات العمل قبل الانطلاق.'),
         const SizedBox(height: 14),
         ...itinerary.stops.map(
           (stop) => Padding(
@@ -492,6 +553,24 @@ class _StopCard extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.w900)),
                       const SizedBox(height: 4),
                       Text(stop.place.category),
+                      const SizedBox(height: 6),
+                      if (stop.arrivalAt != null && stop.departureAt != null)
+                        Text(
+                          '${_formatTime(stop.arrivalAt!)} – ${_formatTime(stop.departureAt!)}',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      if (stop.distanceMeters != null)
+                        Text(_formatDistance(stop.distanceMeters!)),
+                      if (stop.place.openingHours?.trim().isNotEmpty == true)
+                        Text(
+                          'ساعات العمل: ${stop.place.openingHours!.trim()}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                     ],
                   ),
                 ),
@@ -501,6 +580,22 @@ class _StopCard extends StatelessWidget {
           ),
         ),
       );
+}
+
+String _formatTime(DateTime value) {
+  final hour = value.hour.toString().padLeft(2, '0');
+  final minute = value.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
+}
+
+String _formatDate(DateTime? value) {
+  if (value == null) return 'لم يُحدّد وقت';
+  return '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
+}
+
+String _formatDistance(double meters) {
+  if (meters < 1000) return 'يبعد نحو ${meters.round()} م عن المحطة السابقة';
+  return 'يبعد نحو ${(meters / 1000).toStringAsFixed(1)} كم عن المحطة السابقة';
 }
 
 class _EmptyItinerary extends StatelessWidget {

@@ -46,6 +46,7 @@ class _SoufMapPageState extends State<SoufMapPage> {
   LatLng? _myLocation;
   Place? _selectedPlace;
   bool _locating = false;
+  bool _locationAttempted = false;
 
   @override
   void initState() {
@@ -66,7 +67,10 @@ class _SoufMapPageState extends State<SoufMapPage> {
 
   Future<void> _goToMyLocation() async {
     if (_locating) return;
-    setState(() => _locating = true);
+    setState(() {
+      _locating = true;
+      _locationAttempted = true;
+    });
     try {
       final Position position = await _locationService.getCurrentPosition();
       final point = LatLng(position.latitude, position.longitude);
@@ -138,6 +142,15 @@ class _SoufMapPageState extends State<SoufMapPage> {
           routingService: routingService,
         ),
       ),
+    );
+  }
+
+  double _distanceMeters(LatLng first, LatLng second) {
+    return Geolocator.distanceBetween(
+      first.latitude,
+      first.longitude,
+      second.latitude,
+      second.longitude,
     );
   }
 
@@ -260,6 +273,10 @@ class _SoufMapPageState extends State<SoufMapPage> {
                               ),
                             ),
                           ),
+                        if (_locationAttempted && _myLocation == null) ...[
+                          const SizedBox(height: 10),
+                          const _LocationHint(),
+                        ],
                         const Spacer(),
                         Align(
                           alignment: AlignmentDirectional.bottomEnd,
@@ -323,6 +340,12 @@ class _SoufMapPageState extends State<SoufMapPage> {
                     bottom: 154,
                     child: _PlacePopupCard(
                       place: selectedPlace,
+                      distanceMeters: _myLocation == null
+                          ? null
+                          : _distanceMeters(
+                              _myLocation!,
+                              LatLng(selectedPlace.latitude!, selectedPlace.longitude!),
+                            ),
                       onDismiss: _dismissPlaceCard,
                       onDetails: () => _openPlace(selectedPlace),
                       onNavigate: () => _openNavigation(selectedPlace),
@@ -620,12 +643,14 @@ class _PhotoPinPainter extends CustomPainter {
 class _PlacePopupCard extends StatelessWidget {
   const _PlacePopupCard({
     required this.place,
+    required this.distanceMeters,
     required this.onDismiss,
     required this.onDetails,
     required this.onNavigate,
   });
 
   final Place place;
+  final double? distanceMeters;
   final VoidCallback onDismiss;
   final VoidCallback onDetails;
   final VoidCallback onNavigate;
@@ -643,7 +668,7 @@ class _PlacePopupCard extends StatelessWidget {
             children: [
               SizedBox(
                 width: 90,
-                height: 90,
+                height: 122,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(17),
                   child: _PlaceImage(imageUrl: place.imageUrl, iconSize: 30),
@@ -652,7 +677,7 @@ class _PlacePopupCard extends StatelessWidget {
               const SizedBox(width: 11),
               Expanded(
                 child: SizedBox(
-                  height: 90,
+                  height: 122,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -687,6 +712,20 @@ class _PlacePopupCard extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
+                      if (distanceMeters != null)
+                        Text(
+                          distanceMeters! < 1000
+                              ? 'يبعد نحو ${distanceMeters!.round()} م عنك'
+                              : 'يبعد نحو ${(distanceMeters! / 1000).toStringAsFixed(1)} كم عنك',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                        ),
+                      if (place.openingHours?.trim().isNotEmpty == true)
+                        Text(
+                          'ساعات العمل: ${place.openingHours!.trim()}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 10, color: Colors.black54),
+                        ),
                       const Spacer(),
                       Row(
                         children: [
@@ -909,6 +948,31 @@ class _MyLocationMarker extends StatelessWidget {
         child: const DecoratedBox(
           decoration: BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
           child: SizedBox.expand(),
+        ),
+      );
+}
+
+class _LocationHint extends StatelessWidget {
+  const _LocationHint();
+
+  @override
+  Widget build(BuildContext context) => Card(
+        margin: EdgeInsets.zero,
+        color: Colors.white.withOpacity(.95),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            children: [
+              Icon(Icons.location_disabled_outlined, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'فعّل الموقع للحصول على موقعك والمسافة والمسار.',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
         ),
       );
 }

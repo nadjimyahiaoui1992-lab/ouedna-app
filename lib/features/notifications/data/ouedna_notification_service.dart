@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/localization/ouedna_localization.dart';
@@ -67,13 +68,6 @@ class OuednaNotificationService {
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(_androidChannel);
 
-      final permission = await FirebaseMessaging.instance.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-      if (permission.authorizationStatus == AuthorizationStatus.denied) return;
-
       FirebaseMessaging.onMessage
           .listen((message) => _showForegroundMessage(message));
       FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenMessage);
@@ -96,6 +90,16 @@ class OuednaNotificationService {
   }
 
   Future<void> _showForegroundMessage(RemoteMessage message) async {
+    final isEssential = message.data['essential'] == true ||
+        message.data['type'] == 'safety' ||
+        message.data['type'] == 'app_update';
+    if (!isEssential) {
+      final preferences = await SharedPreferences.getInstance();
+      if (!(preferences.getBool(
+              'ouedna.general_notifications_enabled') ?? true)) {
+        return;
+      }
+    }
     final isUpdate = message.data['type'] == 'app_update';
     final title = message.notification?.title ??
         (isUpdate ? 'يتوفر تحديث جديد لودنا' : 'جديد في وادنا');
@@ -127,6 +131,20 @@ class OuednaNotificationService {
       _updateActionController.add(null);
     } else {
       _inboxActionController.add(null);
+    }
+  }
+
+  Future<AuthorizationStatus?> requestPermission() async {
+    if (!_initialized) return null;
+    try {
+      final settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      return settings.authorizationStatus;
+    } catch (_) {
+      return null;
     }
   }
 

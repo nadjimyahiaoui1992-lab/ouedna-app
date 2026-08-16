@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import '../../places/domain/entities/place.dart';
 import 'itinerary_models.dart';
 
@@ -17,10 +18,13 @@ class CompassPlanner {
     }).toList();
 
     final origin = preferences.origin;
+    final originPoint = origin == null
+        ? null
+        : LatLngLike(origin.latitude, origin.longitude);
     candidates.sort((a, b) {
-      if (origin != null) {
-        final distanceCompare =
-            _distanceSquared(a, origin).compareTo(_distanceSquared(b, origin));
+      if (originPoint != null) {
+        final distanceCompare = _distanceSquared(a, originPoint)
+            .compareTo(_distanceSquared(b, originPoint));
         if (distanceCompare != 0) return distanceCompare;
       }
       final ratingCompare = b.rating.compareTo(a.rating);
@@ -33,41 +37,80 @@ class CompassPlanner {
       JourneyLength.halfDay => 5,
       JourneyLength.fullDay => 9,
     };
-    return CompassItinerary(
-      stops: candidates
-          .take(maxStops)
-          .toList(growable: false)
-          .asMap()
-          .entries
-          .map((entry) => CompassStop(
-                place: entry.value,
-                order: entry.key + 1,
-                distanceMeters: origin == null
-                    ? null
-                    : _distanceMeters(entry.value, origin),
-              ))
-          .toList(growable: false),
-    );
+    final selected = candidates.take(maxStops).toList(growable: false);
+    if (selected.isEmpty) return const CompassItinerary(stops: []);
+
+    final now = DateTime.now();
+    final requestedStart = preferences.startAt ??
+        DateTime(now.year, now.month, now.day, 9, 0);
+    var cursor = requestedStart;
+    LatLngLike? previous = originPoint;
+    final stops = <CompassStop>[];
+
+    for (var index = 0; index < selected.length; index++) {
+      final place = selected[index];
+      final distanceMeters = origin == null && previous == null
+          ? null
+          : _distanceMetersBetween(
+              previous!.latitude,
+              previous.longitude,
+              place.latitude!,
+              place.longitude!,
+            );
+      final travelDuration = _travelDuration(distanceMeters);
+      final arrivalAt = cursor.add(travelDuration);
+      final departureAt = arrivalAt.add(preferences.visitDuration);
+      stops.add(
+        CompassStop(
+          place: place,
+          order: index + 1,
+          distanceMeters: distanceMeters,
+          arrivalAt: arrivalAt,
+          departureAt: departureAt,
+          travelDuration: travelDuration,
+        ),
+      );
+      cursor = departureAt;
+      previous = LatLngLike(place.latitude!, place.longitude!);
+    }
+
+    return CompassItinerary(stops: stops);
   }
 
-  double _distanceSquared(Place place, dynamic origin) {
+  double _distanceSquared(Place place, LatLngLike origin) {
     final latitude = (place.latitude! - origin.latitude) * math.pi / 180;
     final longitude = (place.longitude! - origin.longitude) * math.pi / 180;
     return latitude * latitude + longitude * longitude;
   }
 
-  double _distanceMeters(Place place, dynamic origin) {
+  double _distanceMetersBetween(
+    double latitude1,
+    double longitude1,
+    double latitude2,
+    double longitude2,
+  ) {
     const earthRadius = 6371000.0;
-    final latitude1 = place.latitude! * math.pi / 180;
-    final latitude2 = origin.latitude * math.pi / 180;
-    final deltaLatitude = (origin.latitude - place.latitude!) * math.pi / 180;
-    final deltaLongitude =
-        (origin.longitude - place.longitude!) * math.pi / 180;
+    final firstLatitude = latitude1 * math.pi / 180;
+    final secondLatitude = latitude2 * math.pi / 180;
+    final deltaLatitude = (latitude2 - latitude1) * math.pi / 180;
+    final deltaLongitude = (longitude2 - longitude1) * math.pi / 180;
     final a = math.sin(deltaLatitude / 2) * math.sin(deltaLatitude / 2) +
-        math.cos(latitude1) *
-            math.cos(latitude2) *
+        math.cos(firstLatitude) *
+            math.cos(secondLatitude) *
             math.sin(deltaLongitude / 2) *
             math.sin(deltaLongitude / 2);
     return earthRadius * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
   }
+
+  Duration _travelDuration(double? distanceMeters) {
+    if (distanceMeters == null || distanceMeters <= 1) return Duration.zero;
+    final minutes = (distanceMeters / 1000 / 25 * 60).ceil();
+    return Duration(minutes: math.max(6, math.min(minutes, 75)));
+  }
+}
+
+class LatLngLike {
+  const LatLngLike(this.latitude, this.longitude);
+  final double latitude;
+  final double longitude;
 }

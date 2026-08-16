@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/localization/ouedna_localization.dart';
+import '../core/location/location_service.dart';
 import '../core/storage/favorites_controller.dart';
 import '../core/theme/app_theme.dart';
 import '../features/community/domain/repositories/community_repository.dart';
@@ -13,6 +15,7 @@ import '../features/favorites/presentation/favorites_page.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/map/presentation/souf_map_page.dart';
 import '../features/notifications/data/ouedna_notification_service.dart';
+import '../features/notifications/data/visitor_notification_repository.dart';
 import '../features/notifications/presentation/notification_bell.dart';
 import '../features/notifications/presentation/notification_center_page.dart';
 import '../features/places/domain/repositories/place_repository.dart';
@@ -20,6 +23,7 @@ import '../features/places/presentation/place_details_page.dart';
 import '../features/places/presentation/places_page.dart';
 import '../features/routing/domain/routing_service.dart';
 import '../features/tour_guide/domain/repositories/tour_guide_repository.dart';
+import '../features/tour_guide/presentation/tour_guide_page.dart';
 import '../features/updates/data/app_update_service.dart';
 import '../features/updates/presentation/update_center_page.dart';
 import '../features/welcome/presentation/privacy_policy_page.dart';
@@ -57,14 +61,21 @@ class _OuednaAppState extends State<OuednaApp> {
   StreamSubscription<void>? _inboxActionSubscription;
   var _selectedIndex = 0;
   var _themeMode = ThemeMode.system;
+  static const _welcomeSeenKey = 'ouedna.welcome_seen';
+  static const _locationPromptSeenKey = 'ouedna.location_prompt_seen';
+  static const _notificationsPromptSeenKey = 'ouedna.notifications_prompt_seen';
+
   var _showWelcome = true;
+  var _startupPreferencesLoaded = false;
+  Future<void>? _notificationInitialization;
   int? _openingPlaceId;
 
   @override
   void initState() {
     super.initState();
     _listenForDeepLinks();
-    _initializeNotifications();
+    _notificationInitialization = _initializeNotifications();
+    _loadStartupPreferences();
   }
 
   @override
@@ -74,6 +85,15 @@ class _OuednaAppState extends State<OuednaApp> {
     _inboxActionSubscription?.cancel();
     OuednaNotificationService.instance.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadStartupPreferences() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _showWelcome = !(preferences.getBool(_welcomeSeenKey) ?? false);
+      _startupPreferencesLoaded = true;
+    });
   }
 
   Future<void> _initializeNotifications() async {
@@ -179,10 +199,112 @@ class _OuednaAppState extends State<OuednaApp> {
 
   void _select(int index) => setState(() => _selectedIndex = index);
 
-  void _enterApp() {
+  Future<void> _enterApp() async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(_welcomeSeenKey, true);
+    if (!mounted) return;
     setState(() => _showWelcome = false);
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _maybePromptForUpdate());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _maybeShowPermissionPrompts();
+      await _maybePromptForUpdate();
+    });
+  }
+
+  Future<void> _maybeShowPermissionPrompts() async {
+    await _notificationInitialization;
+    if (!mounted) return;
+    final preferences = await SharedPreferences.getInstance();
+    final locationSeen = preferences.getBool(_locationPromptSeenKey) ?? false;
+    if (!locationSeen) {
+      final allowLocation = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          icon: const Icon(Icons.location_on_outlined),
+          title: const Text('فعّل موقعك'),
+          content: const Text(
+            'يساعدك موقعك على اكتشاف الأماكن القريبة منك، وحساب المسافة وبدء المسار إلى وجهتك.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('ليس الآن'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('تفعيل الموقع'),
+            ),
+          ],
+        ),
+      );
+      await preferences.setBool(_locationPromptSeenKey, true);
+      if (allowLocation == true) {
+        final granted = await LocationService().requestPermission();
+        if (!granted && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('يمكنك متابعة التصفح، وتفعيل الموقع لاحقاً من الخريطة.')),
+          );
+        }
+      }
+    }
+
+    if (!mounted) return;
+    final notificationsSeen =
+        preferences.getBool(_notificationsPromptSeenKey) ?? false;
+    if (notificationsSeen) return;
+    final allowNotifications = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.notifications_active_outlined),
+        title: const Text('ابقَ على اطلاع'),
+        content: const Text(
+          'فعّل الإشعارات ليصلك كل جديد من وادنا، مثل المعالم الجديدة، الفعاليات، والتنبيهات المهمة.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('ليس الآن'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('تفعيل الإشعارات'),
+          ),
+        ],
+      ),
+    );
+    await preferences.setBool(_notificationsPromptSeenKey, true);
+    if (allowNotifications == true) {
+      await OuednaNotificationService.instance.requestPermission();
+    }
+  }
+
+  Future<void> _showNotificationSettings() async {
+    var enabled = await VisitorNotificationRepository()
+        .generalNotificationsEnabled();
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('الإشعارات'),
+          content: SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('الإشعارات العامة'),
+            value: enabled,
+            onChanged: (value) async {
+              await VisitorNotificationRepository()
+                  .setGeneralNotificationsEnabled(value);
+              setDialogState(() => enabled = value);
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('إغلاق'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _maybePromptForUpdate() async {
@@ -249,6 +371,13 @@ class _OuednaAppState extends State<OuednaApp> {
                 routingService: widget.routingService,
                 onExplore: () => _select(1),
                 onMap: () => _select(2),
+                onGuide: () => _navigatorKey.currentState?.push(
+                  MaterialPageRoute(
+                    builder: (_) => TourGuidePage(
+                      repository: widget.tourGuideRepository,
+                    ),
+                  ),
+                ),
               ),
               PlacesPage(
                 repository: widget.placeRepository,
@@ -291,10 +420,12 @@ class _OuednaAppState extends State<OuednaApp> {
                     language.isRtl ? TextDirection.rtl : TextDirection.ltr,
                 child: child ?? const SizedBox.shrink(),
               ),
-              home: _showWelcome
+              home: !_startupPreferencesLoaded || _showWelcome
                   ? WelcomePage(
                       repository: widget.placeRepository,
-                      onContinue: _enterApp,
+                      onContinue: () {
+                        _enterApp();
+                      },
                     )
                   : Scaffold(
                       body: Stack(
@@ -327,6 +458,9 @@ class _OuednaAppState extends State<OuednaApp> {
                                       if (action == _MenuAction.theme) {
                                         _toggleTheme();
                                       } else if (action ==
+                                          _MenuAction.notifications) {
+                                        _showNotificationSettings();
+                                      } else if (action ==
                                           _MenuAction.privacy) {
                                         _navigatorKey.currentState?.push(
                                           MaterialPageRoute(
@@ -350,6 +484,16 @@ class _OuednaAppState extends State<OuednaApp> {
                                             ),
                                             const SizedBox(width: 10),
                                             Text(strings.text('change_theme')),
+                                          ],
+                                        ),
+                                      ),
+                                      PopupMenuItem(
+                                        value: _MenuAction.notifications,
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.notifications_outlined),
+                                            const SizedBox(width: 10),
+                                            const Text('الإشعارات'),
                                           ],
                                         ),
                                       ),
@@ -425,4 +569,4 @@ class _OuednaAppState extends State<OuednaApp> {
       );
 }
 
-enum _MenuAction { theme, privacy, update }
+enum _MenuAction { theme, notifications, privacy, update }

@@ -45,6 +45,28 @@ void main() {
     expect(itinerary.stops.first.place.id, 1);
   });
 
+  test('Souf Compass assigns ordered visit times from the selected start', () {
+    final start = DateTime(2026, 8, 16, 9);
+    final itinerary = planner.compose(
+      places: [
+        place(id: 1, category: 'تراث', rating: 5, longitude: 6.86),
+        place(id: 2, category: 'تراث', rating: 4.8, longitude: 6.87),
+      ],
+      preferences: CompassPreferences(
+        length: JourneyLength.quick,
+        startAt: start,
+      ),
+    );
+
+    expect(itinerary.startAt, isNotNull);
+    expect(itinerary.stops.first.arrivalAt!.isAfter(start), isTrue);
+    expect(
+      itinerary.stops[1].arrivalAt!.isAfter(itinerary.stops.first.departureAt!),
+      isTrue,
+    );
+    expect(itinerary.stops[1].distanceMeters, greaterThan(0));
+  });
+
   test(
       'Souf Compass never creates an itinerary from places without coordinates',
       () {

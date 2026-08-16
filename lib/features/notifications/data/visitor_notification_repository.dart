@@ -10,6 +10,9 @@ class VisitorNotificationRepository {
       : _client = client ?? Supabase.instance.client;
 
   static const _readIdsKey = 'ouedna.read_visitor_notification_ids';
+  static const _hiddenIdsKey = 'ouedna.hidden_visitor_notification_ids';
+  static const generalNotificationsKey =
+      'ouedna.general_notifications_enabled';
   final SupabaseClient _client;
 
   Future<List<VisitorNotification>> getPublished({int limit = 50}) async {
@@ -31,6 +34,21 @@ class VisitorNotificationRepository {
     return preferences.getStringList(_readIdsKey)?.toSet() ?? <String>{};
   }
 
+  Future<Set<String>> hiddenIds() async {
+    final preferences = await SharedPreferences.getInstance();
+    return preferences.getStringList(_hiddenIdsKey)?.toSet() ?? <String>{};
+  }
+
+  Future<bool> generalNotificationsEnabled() async {
+    final preferences = await SharedPreferences.getInstance();
+    return preferences.getBool(generalNotificationsKey) ?? true;
+  }
+
+  Future<void> setGeneralNotificationsEnabled(bool enabled) async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(generalNotificationsKey, enabled);
+  }
+
   Future<void> markRead(String notificationId) async {
     final preferences = await SharedPreferences.getInstance();
     final ids = await readIds();
@@ -47,6 +65,20 @@ class VisitorNotificationRepository {
       _readIdsKey,
       ids.take(300).toList(growable: false),
     );
+  }
+
+  Future<void> hide(String notificationId) async {
+    final preferences = await SharedPreferences.getInstance();
+    final ids = await hiddenIds();
+    ids.add(notificationId);
+    await preferences.setStringList(_hiddenIdsKey, ids.take(300).toList());
+  }
+
+  Future<void> hideAll(Iterable<String> notificationIds) async {
+    final preferences = await SharedPreferences.getInstance();
+    final ids = await hiddenIds();
+    ids.addAll(notificationIds);
+    await preferences.setStringList(_hiddenIdsKey, ids.take(300).toList());
   }
 
   Stream<void> watchPublished() {
