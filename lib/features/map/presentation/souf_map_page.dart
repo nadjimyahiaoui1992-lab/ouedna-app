@@ -1,5 +1,7 @@
 import 'dart:ui' as ui;
 
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -41,6 +43,7 @@ class _SoufMapPageState extends State<SoufMapPage> {
   final _placePageController = PageController(viewportFraction: .88);
 
   late Future<List<Place>> _future;
+  StreamSubscription<void>? _placesSubscription;
   _MapLayer _layer = _MapLayer.standard;
   String? _category;
   LatLng? _myLocation;
@@ -51,10 +54,15 @@ class _SoufMapPageState extends State<SoufMapPage> {
   void initState() {
     super.initState();
     _future = _load();
+    _placesSubscription = widget.repository?.watchPublishedPlaces().listen((_) {
+      if (!mounted) return;
+      _reload();
+    });
   }
 
   @override
   void dispose() {
+    _placesSubscription?.cancel();
     _placePageController.dispose();
     super.dispose();
   }
@@ -62,7 +70,13 @@ class _SoufMapPageState extends State<SoufMapPage> {
   Future<List<Place>> _load() =>
       widget.repository?.getPublishedPlaces() ?? Future.value(const <Place>[]);
 
-  void _reload() => setState(() => _future = _load());
+  void _reload() {
+    if (!mounted) return;
+    setState(() {
+      _selectedPlace = null;
+      _future = _load();
+    });
+  }
 
   Future<void> _goToMyLocation() async {
     if (_locating) return;
