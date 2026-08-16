@@ -3,12 +3,14 @@ import 'dart:ui' as ui;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/localization/ouedna_localization.dart';
 import '../../../core/location/location_service.dart';
 import '../../../core/storage/favorites_controller.dart';
+import '../../../core/widgets/ouedna_map_tiles.dart';
 import '../../places/domain/entities/place.dart';
 import '../../places/domain/repositories/place_repository.dart';
 import '../../places/presentation/place_details_page.dart';
@@ -39,10 +41,12 @@ class _SoufMapPageState extends State<SoufMapPage> {
   final _mapController = MapController();
   final _locationService = LocationService();
   final _placePageController = PageController(viewportFraction: .88);
+  final _searchController = TextEditingController();
 
   late Future<List<Place>> _future;
   _MapLayer _layer = _MapLayer.standard;
   String? _category;
+  String _query = '';
   LatLng? _myLocation;
   Place? _selectedPlace;
   bool _locating = false;
@@ -56,6 +60,7 @@ class _SoufMapPageState extends State<SoufMapPage> {
   @override
   void dispose() {
     _placePageController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -110,6 +115,66 @@ class _SoufMapPageState extends State<SoufMapPage> {
 
   void _dismissPlaceCard() => setState(() => _selectedPlace = null);
 
+  void _zoomBy(double delta) {
+    final camera = _mapController.camera;
+    final zoom = (camera.zoom + delta).clamp(2.0, 19.0).toDouble();
+    _mapController.move(camera.center, zoom);
+  }
+
+  Future<void> _openSearch() async {
+    _searchController.text = _query;
+    final query = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          8,
+          20,
+          MediaQuery.viewInsetsOf(sheetContext).bottom + 20,
+        ),
+        child: TextField(
+          controller: _searchController,
+          autofocus: true,
+          textDirection: TextDirection.rtl,
+          decoration: InputDecoration(
+            labelText: 'ابحث عن معلم أو تصنيف أو منطقة',
+            prefixIcon: const Icon(Icons.search_rounded),
+            suffixIcon: IconButton(
+              tooltip: 'مسح البحث',
+              onPressed: () => _searchController.clear(),
+              icon: const Icon(Icons.clear_rounded),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+          ),
+          onSubmitted: (value) => Navigator.of(sheetContext).pop(value.trim()),
+        ),
+      ),
+    );
+    if (!mounted || query == null) return;
+    setState(() {
+      _query = query;
+      _selectedPlace = null;
+    });
+    if (_placePageController.hasClients) _placePageController.jumpToPage(0);
+  }
+
+  bool _matchesQuery(Place place) {
+    final query = _query.trim().toLowerCase();
+    if (query.isEmpty) return true;
+    final searchable = [
+      place.name,
+      place.category,
+      place.subCategory,
+      place.description,
+      place.locationLabel,
+    ].whereType<String>().join(' ').toLowerCase();
+    return searchable.contains(query);
+  }
+
   void _openPlace(Place place) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -163,7 +228,7 @@ class _SoufMapPageState extends State<SoufMapPage> {
             if (snapshot.hasError) return _MapError(onRetry: _reload);
 
             final allPlaces = (snapshot.data ?? const <Place>[])
-                .where((place) => place.hasCoordinates)
+                .where((place) => place.hasCoordinates && _matchesQuery(place))
                 .toList(growable: false);
             final categories =
                 allPlaces.map((item) => item.category).toSet().toList()..sort();
@@ -190,36 +255,40 @@ class _SoufMapPageState extends State<SoufMapPage> {
                     initialZoom: allPlaces.isEmpty ? 11.5 : 13,
                   ),
                   children: [
-                    TileLayer(
-                      urlTemplate: _layer == _MapLayer.standard
-                          ? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-                          : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                      userAgentPackageName: 'com.ouedna.app.v2',
-                    ),
-                    if (_layer == _MapLayer.satellite)
-                      TileLayer(
-                        urlTemplate:
-                            'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-                        userAgentPackageName: 'com.ouedna.app.v2',
-                      ),
-                    MarkerLayer(
-                      markers: [
-                        ...visiblePlaces.map(
-                          (place) => _placeMarker(
-                            place,
-                            selected: place.id == selectedPlace?.id,
-                            onTap: () => _selectPlace(place, visiblePlaces),
-                          ),
+                    _layer == _MapLayer.standard
+                        ? OuednaMapTiles.standard()
+                        : OuednaMapTiles.satellite(),
+                    MarkerClusterLayerWidget(
+                      options: MarkerClusterLayerOptions(
+                        markers: visiblePlaces
+                            .map(
+                              (place) => _placeMarker(
+                                place,
+                                selected: place.id == selectedPlace?.id,
+                                onTap: () => _selectPlace(place, visiblePlaces),
+                              ),
+                            )
+                            .toList(growable: false),
+                        maxClusterRadius: 64,
+                        disableClusteringAtZoom: 16,
+                        size: const Size(52, 52),
+                        padding: const EdgeInsets.all(56),
+                        builder: (context, markers) => _ClusterMarker(
+                          count: markers.length,
                         ),
-                        if (_myLocation != null)
+                      ),
+                    ),
+                    if (_myLocation != null)
+                      MarkerLayer(
+                        markers: [
                           Marker(
                             point: _myLocation!,
                             width: 50,
                             height: 50,
                             child: const _MyLocationMarker(),
                           ),
-                      ],
-                    ),
+                        ],
+                      ),
                   ],
                 ),
                 SafeArea(
@@ -233,6 +302,7 @@ class _SoufMapPageState extends State<SoufMapPage> {
                           onLayerChanged: (layer) =>
                               setState(() => _layer = layer),
                           onRefresh: _reload,
+                          onSearch: _openSearch,
                         ),
                         const SizedBox(height: 10),
                         if (categories.isNotEmpty)
@@ -266,6 +336,18 @@ class _SoufMapPageState extends State<SoufMapPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
+                              _MapControl(
+                                icon: Icons.add_rounded,
+                                tooltip: 'تكبير الخريطة',
+                                onTap: () => _zoomBy(1),
+                              ),
+                              const SizedBox(height: 8),
+                              _MapControl(
+                                icon: Icons.remove_rounded,
+                                tooltip: 'تصغير الخريطة',
+                                onTap: () => _zoomBy(-1),
+                              ),
+                              const SizedBox(height: 8),
                               _MapControl(
                                 icon: _locating
                                     ? Icons.hourglass_top_rounded
@@ -364,6 +446,35 @@ class _SoufMapPageState extends State<SoufMapPage> {
   }
 }
 
+class _ClusterMarker extends StatelessWidget {
+  const _ClusterMarker({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0E5547),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 3),
+          boxShadow: const [
+            BoxShadow(
+                color: Colors.black26, blurRadius: 8, offset: Offset(0, 3)),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            '$count',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 15,
+            ),
+          ),
+        ),
+      );
+}
+
 class _MapStartNavigationButton extends StatelessWidget {
   const _MapStartNavigationButton({
     required this.placeName,
@@ -400,12 +511,14 @@ class _MapHeader extends StatelessWidget {
     required this.layer,
     required this.onLayerChanged,
     required this.onRefresh,
+    required this.onSearch,
   });
 
   final int count;
   final _MapLayer layer;
   final ValueChanged<_MapLayer> onLayerChanged;
   final VoidCallback onRefresh;
+  final VoidCallback onSearch;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
@@ -438,6 +551,11 @@ class _MapHeader extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                tooltip: 'بحث في الخريطة',
+                onPressed: onSearch,
+                icon: const Icon(Icons.search_rounded),
               ),
               const LanguageSelector(compact: true),
               const SizedBox(width: 2),
