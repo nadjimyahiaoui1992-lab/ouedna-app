@@ -81,6 +81,13 @@ class LocationService {
         permission == LocationPermission.always;
   }
 
+  Future<bool> openRelevantSettings() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      return Geolocator.openLocationSettings();
+    }
+    return Geolocator.openAppSettings();
+  }
+
   Future<void> _ensureLocationAccess() async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {

@@ -26,33 +26,46 @@ class NotificationBell extends StatefulWidget {
 
 class _NotificationBellState extends State<NotificationBell> {
   final _notifications = VisitorNotificationRepository();
-  StreamSubscription<void>? _subscription;
+  StreamSubscription<void>? _publishedSubscription;
+  StreamSubscription<void>? _localSubscription;
   int _unreadCount = 0;
+  int _refreshToken = 0;
 
   @override
   void initState() {
     super.initState();
     _refreshUnread();
-    _subscription =
+    _publishedSubscription =
         _notifications.watchPublished().listen((_) => _refreshUnread());
+    _localSubscription =
+        _notifications.watchLocalChanges().listen((_) => _refreshUnread());
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    _publishedSubscription?.cancel();
+    _localSubscription?.cancel();
     super.dispose();
   }
 
   Future<void> _refreshUnread() async {
+    final token = ++_refreshToken;
     try {
       final result = await Future.wait([
         _notifications.getPublished(limit: 60),
         _notifications.readIds(),
+        _notifications.hiddenIds(),
       ]);
       final items = result[0] as List;
       final readIds = result[1] as Set<String>;
-      final unread = items.where((item) => !readIds.contains(item.id)).length;
-      if (mounted) setState(() => _unreadCount = unread);
+      final hiddenIds = result[2] as Set<String>;
+      final unread = items
+          .where((item) =>
+              !hiddenIds.contains(item.id) && !readIds.contains(item.id))
+          .length;
+      if (mounted && token == _refreshToken) {
+        setState(() => _unreadCount = unread);
+      }
     } catch (_) {
       // The home page remains available if notifications are offline.
     }

@@ -1,4 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -62,28 +64,6 @@ class _PlaceDetailsPageState extends State<PlaceDetailsPage> {
     final strings = OuednaStrings.of(context);
 
     return Scaffold(
-      bottomNavigationBar: place.hasCoordinates
-          ? SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
-                child: FilledButton.icon(
-                  onPressed: widget.routingService == null
-                      ? null
-                      : () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => LiveNavigationPage(
-                                place: place,
-                                routingService: widget.routingService!,
-                              ),
-                            ),
-                          ),
-                  icon: const Icon(Icons.navigation_rounded),
-                  label: Text(strings.text('navigate_to_place')),
-                ),
-              ),
-            )
-          : null,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -163,13 +143,7 @@ class _PlaceDetailsPageState extends State<PlaceDetailsPage> {
                         ),
                   ),
                   const SizedBox(height: 10),
-                  AutoTranslatedText(
-                    place.description,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyLarge
-                        ?.copyWith(height: 1.65),
-                  ),
+                  _ReadableDescription(description: place.description),
                   const SizedBox(height: 28),
                   _Actions(place: place, routingService: widget.routingService),
                   const SizedBox(height: 30),
@@ -267,6 +241,39 @@ class _InfoRow extends StatelessWidget {
       );
 }
 
+class _ReadableDescription extends StatelessWidget {
+  const _ReadableDescription({required this.description});
+
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    final paragraphs = description
+        .split(RegExp(r'\n\s*\n|\n'))
+        .map((paragraph) => paragraph.trim())
+        .where((paragraph) => paragraph.isNotEmpty)
+        .toList(growable: false);
+    if (paragraphs.isEmpty) {
+      return const Text('لا توجد نبذة متاحة حالياً.');
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var index = 0; index < paragraphs.length; index++) ...[
+          if (index > 0) const SizedBox(height: 14),
+          AutoTranslatedText(
+            paragraphs[index],
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  height: 1.75,
+                  fontSize: 16,
+                ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _Actions extends StatelessWidget {
   const _Actions({required this.place, required this.routingService});
 
@@ -278,6 +285,11 @@ class _Actions extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           FilledButton.icon(
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 46),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
             onPressed: !place.hasCoordinates || routingService == null
                 ? null
                 : () => Navigator.of(context).push(
@@ -288,8 +300,8 @@ class _Actions extends StatelessWidget {
                         ),
                       ),
                     ),
-            icon: const Icon(Icons.navigation_outlined),
-            label: Text(OuednaStrings.of(context).text('in_app_navigation')),
+            icon: const Icon(Icons.route_rounded, size: 20),
+            label: const Text('ابدأ المسار'),
           ),
         ],
       );
@@ -333,40 +345,165 @@ class _Gallery extends StatelessWidget {
       );
 }
 
-class _MiniMap extends StatelessWidget {
+class _MiniMap extends StatefulWidget {
   const _MiniMap({required this.place});
 
   final Place place;
 
   @override
+  State<_MiniMap> createState() => _MiniMapState();
+}
+
+class _MiniMapState extends State<_MiniMap> {
+  late final StreamController<void> _resetController;
+  bool _loading = true;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resetController = StreamController<void>.broadcast();
+  }
+
+  @override
+  void dispose() {
+    _resetController.close();
+    super.dispose();
+  }
+
+  void _retry() {
+    setState(() {
+      _loading = true;
+      _hasError = false;
+    });
+    _resetController.add(null);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final point = LatLng(place.latitude!, place.longitude!);
+    final point = LatLng(widget.place.latitude!, widget.place.longitude!);
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: SizedBox(
         height: 220,
-        child: FlutterMap(
-          options: MapOptions(initialCenter: point, initialZoom: 14),
+        child: Stack(
           children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.ouedna.app.v2',
+            ColoredBox(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: FlutterMap(
+                options: MapOptions(initialCenter: point, initialZoom: 14),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.ouedna.app.v2',
+                    reset: _resetController.stream,
+                    tileBuilder: (context, tileWidget, tile) => AnimatedBuilder(
+                      animation: tile,
+                      builder: (context, child) {
+                        if (tile.readyToDisplay) {
+                          if (_loading) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (mounted) setState(() => _loading = false);
+                            });
+                          }
+                          return child!;
+                        }
+                        return Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            const ColoredBox(color: Color(0xFFECE7DE)),
+                            Center(
+                              child: tile.loadError
+                                  ? const Icon(Icons.cloud_off_outlined)
+                                  : const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                            ),
+                          ],
+                        );
+                      },
+                      child: tileWidget,
+                    ),
+                    errorTileCallback: (_, __, ___) {
+                      if (mounted) setState(() => _hasError = true);
+                    },
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: point,
+                        child: const Icon(
+                          Icons.location_on,
+                          color: Colors.red,
+                          size: 40,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: point,
-                  child: const Icon(
-                    Icons.location_on,
-                    color: Colors.red,
-                    size: 40,
+            if (_hasError)
+              Positioned.fill(
+                child: ColoredBox(
+                  color: Colors.white.withOpacity(.82),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('تعذر تحميل الخريطة'),
+                        const SizedBox(height: 8),
+                        FilledButton.icon(
+                          onPressed: _retry,
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('إعادة المحاولة'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
+              )
+            else if (_loading)
+              const PositionedDirectional(
+                start: 12,
+                bottom: 12,
+                child: _MapLoadingPill(),
+              ),
           ],
         ),
       ),
     );
   }
+}
+
+class _MapLoadingPill extends StatelessWidget {
+  const _MapLoadingPill();
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(.92),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 8),
+              Text('جارٍ تحميل الموقع...'),
+            ],
+          ),
+        ),
+      );
 }

@@ -102,8 +102,8 @@ class WelcomePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   _WelcomeValue(
-                    icon: Icons.auto_awesome_outlined,
-                    text: strings.text('smart_guide'),
+                    icon: Icons.route_outlined,
+                    text: strings.text('my_itinerary'),
                   ),
                   const SizedBox(height: 12),
                   _WelcomeValue(

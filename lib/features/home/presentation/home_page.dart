@@ -16,7 +16,6 @@ class HomePage extends StatelessWidget {
     required this.routingService,
     required this.onExplore,
     required this.onMap,
-    required this.onGuide,
   });
 
   final PlaceRepository? repository;
@@ -24,7 +23,6 @@ class HomePage extends StatelessWidget {
   final RoutingService? routingService;
   final VoidCallback onExplore;
   final VoidCallback onMap;
-  final VoidCallback onGuide;
 
   @override
   Widget build(BuildContext context) {
@@ -157,14 +155,6 @@ class HomePage extends StatelessWidget {
                             ),
                           ),
                 ),
-                const SizedBox(height: 12),
-                _WideAction(
-                  icon: Icons.auto_awesome_outlined,
-                  title: 'المساعد السياحي',
-                  subtitle: 'اسأل عن الأماكن والرحلات والنصائح العملية.',
-                  onTap: repository == null ? null : onGuide,
-                ),
-                const SizedBox(height: 12),
                 _WideAction(
                   icon: Icons.emergency_outlined,
                   title: strings.text('emergency_help'),

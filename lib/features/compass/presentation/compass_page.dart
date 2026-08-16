@@ -301,7 +301,7 @@ class _CompassPageState extends State<CompassPage> {
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: () => _buildItinerary(data.places),
-                    icon: const Icon(Icons.auto_awesome_outlined),
+                    icon: const Icon(Icons.route_rounded),
                     label: const Text('إنشاء خط رحلتي'),
                   ),
                 ),

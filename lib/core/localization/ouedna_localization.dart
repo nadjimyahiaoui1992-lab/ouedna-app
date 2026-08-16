@@ -104,8 +104,7 @@ class OuednaStrings {
       'official_platform': 'المنصة السياحية الرسمية',
       'desert_heart': 'قلب الصحراء ينبض هنا',
       'welcome_intro':
-          'مرحباً بك في وادنا، دليلك الذكي لاستكشاف كنوز وادي سوف. من القباب التاريخية إلى الواحات الخضراء وسط الرمال الذهبية، نحن هنا لنرشدك في رحلة لا تُنسى.',
-      'smart_guide': 'إرشاد سياحي ذكي',
+          'مرحباً بك في وادنا، منصتك لاكتشاف كنوز وادي سوف. من القباب التاريخية إلى الواحات الخضراء وسط الرمال الذهبية، خطط لرحلتك واستكشف الأماكن التي تهمك.',
       'heritage_archive': 'أرشيف وذكريات وادي سوف التاريخية',
       'interactive_maps': 'خرائط تفاعلية ومسارات سياحية دقيقة',
       'start_exploring': 'ابدأ رحلة الاستكشاف',
@@ -184,8 +183,7 @@ class OuednaStrings {
       'official_platform': 'Plateforme touristique officielle',
       'desert_heart': 'Le cœur du désert bat ici',
       'welcome_intro':
-          'Bienvenue sur Ouedna, votre guide intelligent pour découvrir les trésors d’El Oued. Des coupoles historiques aux oasis vertes au milieu des sables dorés, nous vous accompagnons dans un voyage inoubliable.',
-      'smart_guide': 'Guidage touristique intelligent',
+          'Bienvenue sur Ouedna, votre plateforme pour découvrir les trésors d’El Oued. Des coupoles historiques aux oasis vertes au milieu des sables dorés, planifiez votre trajet et explorez les lieux qui vous intéressent.',
       'heritage_archive': 'Archives et mémoire historique d’El Oued',
       'interactive_maps': 'Cartes interactives et itinéraires précis',
       'start_exploring': 'Commencer à explorer',
@@ -272,8 +270,7 @@ class OuednaStrings {
       'official_platform': 'Official tourism platform',
       'desert_heart': 'The heart of the desert beats here',
       'welcome_intro':
-          'Welcome to Ouedna, your intelligent guide to discover the treasures of El Oued. From historic domes to green oases among golden sands, we are here to guide an unforgettable journey.',
-      'smart_guide': 'Smart tourism guidance',
+          'Welcome to Ouedna, your platform for discovering the treasures of El Oued. From historic domes to green oases among golden sands, plan your route and explore the places that interest you.',
       'heritage_archive': 'El Oued historical archive and memories',
       'interactive_maps': 'Interactive maps and accurate routes',
       'start_exploring': 'Start exploring',

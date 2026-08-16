@@ -23,7 +23,6 @@ import '../features/places/presentation/place_details_page.dart';
 import '../features/places/presentation/places_page.dart';
 import '../features/routing/domain/routing_service.dart';
 import '../features/tour_guide/domain/repositories/tour_guide_repository.dart';
-import '../features/tour_guide/presentation/tour_guide_page.dart';
 import '../features/updates/data/app_update_service.dart';
 import '../features/updates/presentation/update_center_page.dart';
 import '../features/welcome/presentation/privacy_policy_page.dart';
@@ -238,13 +237,32 @@ class _OuednaAppState extends State<OuednaApp> {
       );
       await preferences.setBool(_locationPromptSeenKey, true);
       if (allowLocation == true) {
-        final granted = await LocationService().requestPermission();
+        final locationService = LocationService();
+        final granted = await locationService.requestPermission();
         if (!granted && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text(
-                    'يمكنك متابعة التصفح، وتفعيل الموقع لاحقاً من الخريطة.')),
+          final openSettings = await showDialog<bool>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              icon: const Icon(Icons.location_disabled_outlined),
+              title: const Text('يمكن تفعيل الموقع لاحقاً'),
+              content: const Text(
+                'يمكنك متابعة التصفح الآن، أو فتح إعدادات Android لتفعيل الموقع عند الحاجة.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('ليس الآن'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: const Text('فتح إعدادات الموقع'),
+                ),
+              ],
+            ),
           );
+          if (openSettings == true) {
+            await locationService.openRelevantSettings();
+          }
         }
       }
     }
@@ -373,13 +391,6 @@ class _OuednaAppState extends State<OuednaApp> {
                 routingService: widget.routingService,
                 onExplore: () => _select(1),
                 onMap: () => _select(2),
-                onGuide: () => _navigatorKey.currentState?.push(
-                  MaterialPageRoute(
-                    builder: (_) => TourGuidePage(
-                      repository: widget.tourGuideRepository,
-                    ),
-                  ),
-                ),
               ),
               PlacesPage(
                 repository: widget.placeRepository,

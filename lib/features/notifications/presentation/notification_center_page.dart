@@ -30,6 +30,7 @@ class NotificationCenterPage extends StatefulWidget {
 class _NotificationCenterPageState extends State<NotificationCenterPage> {
   final _notifications = VisitorNotificationRepository();
   StreamSubscription<void>? _subscription;
+  StreamSubscription<void>? _localSubscription;
   List<VisitorNotification> _items = const [];
   Set<String> _readIds = const {};
   Set<String> _hiddenIds = const {};
@@ -40,11 +41,14 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     super.initState();
     _load();
     _subscription = _notifications.watchPublished().listen((_) => _load());
+    _localSubscription =
+        _notifications.watchLocalChanges().listen((_) => _load());
   }
 
   @override
   void dispose() {
     _subscription?.cancel();
+    _localSubscription?.cancel();
     super.dispose();
   }
 

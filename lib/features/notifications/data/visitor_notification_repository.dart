@@ -12,6 +12,8 @@ class VisitorNotificationRepository {
   static const _readIdsKey = 'ouedna.read_visitor_notification_ids';
   static const _hiddenIdsKey = 'ouedna.hidden_visitor_notification_ids';
   static const generalNotificationsKey = 'ouedna.general_notifications_enabled';
+  static final StreamController<void> _localChanges =
+      StreamController<void>.broadcast();
   final SupabaseClient _client;
 
   Future<List<VisitorNotification>> getPublished({int limit = 50}) async {
@@ -54,6 +56,7 @@ class VisitorNotificationRepository {
     ids.add(notificationId);
     final recentIds = ids.take(300).toList(growable: false);
     await preferences.setStringList(_readIdsKey, recentIds);
+    _localChanges.add(null);
   }
 
   Future<void> markAllRead(Iterable<String> notificationIds) async {
@@ -64,6 +67,7 @@ class VisitorNotificationRepository {
       _readIdsKey,
       ids.take(300).toList(growable: false),
     );
+    _localChanges.add(null);
   }
 
   Future<void> hide(String notificationId) async {
@@ -71,6 +75,7 @@ class VisitorNotificationRepository {
     final ids = await hiddenIds();
     ids.add(notificationId);
     await preferences.setStringList(_hiddenIdsKey, ids.take(300).toList());
+    _localChanges.add(null);
   }
 
   Future<void> hideAll(Iterable<String> notificationIds) async {
@@ -78,7 +83,10 @@ class VisitorNotificationRepository {
     final ids = await hiddenIds();
     ids.addAll(notificationIds);
     await preferences.setStringList(_hiddenIdsKey, ids.take(300).toList());
+    _localChanges.add(null);
   }
+
+  Stream<void> watchLocalChanges() => _localChanges.stream;
 
   Stream<void> watchPublished() {
     final controller = StreamController<void>.broadcast();

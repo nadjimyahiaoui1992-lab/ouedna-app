@@ -1,0 +1,84 @@
+name: Build Android beta test APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-beta-test
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build beta release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Enforce formatting
+        run: dart format --set-exit-if-changed lib test
+
+      - name: Analyze source
+        run: flutter analyze --fatal-infos
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Create temporary signing key
+        run: |
+          keytool -genkeypair -v \
+            -keystore "$RUNNER_TEMP/ouedna-test.jks" \
+            -storepass ouedna-test \
+            -keypass ouedna-test \
+            -alias ouedna-test \
+            -keyalg RSA -keysize 2048 -validity 3650 \
+            -dname "CN=Ouedna Beta Test, OU=QA, O=Ouedna, L=El Oued, ST=El Oued, C=DZ"
+
+      - name: Build beta release APK
+        env:
+          OUEDNA_KEYSTORE_PATH: ${{ runner.temp }}/ouedna-test.jks
+          OUEDNA_KEY_ALIAS: ouedna-test
+          OUEDNA_STORE_PASSWORD: ouedna-test
+          OUEDNA_KEY_PASSWORD: ouedna-test
+        run: >-
+          flutter build apk --flavor direct --release
+          --build-name 2.0.7-beta.2
+          --build-number 20702
+          --dart-define=OUEDNA_DIRECT_BUILD=true
+
+      - name: Verify APK signature and package
+        run: |
+          APKSIGNER="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
+          APK="build/app/outputs/flutter-apk/app-direct-release.apk"
+          test -s "$APK"
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+          sha256sum "$APK"
+
+      - name: Upload beta APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ouedna-2.0.7-beta.2-release
+          path: build/app/outputs/flutter-apk/app-direct-release.apk
+          if-no-files-found: error
+          retention-days: 14
