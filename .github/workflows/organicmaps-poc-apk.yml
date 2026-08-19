@@ -1,0 +1,95 @@
+name: Build Organic Maps integration POC APK
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: organicmaps-poc-apk
+  cancel-in-progress: true
+jobs:
+  build:
+    name: Build signed Organic Maps POC APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+      OUEDNA_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      OUEDNA_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      OUEDNA_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+      OUEDNA_KEYSTORE_PATH: ${{ github.workspace }}/android/app/ouedna-release.jks
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+      - name: Validate production secrets
+        run: |
+          missing=()
+          for secret in ANDROID_KEYSTORE_BASE64 OUEDNA_KEY_ALIAS OUEDNA_KEY_PASSWORD OUEDNA_STORE_PASSWORD SUPABASE_URL SUPABASE_PUBLISHABLE_KEY; do
+            if [ -z "${!secret}" ]; then missing+=("$secret"); fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "Missing required production secrets: ${missing[*]}" >&2
+            exit 1
+          fi
+      - name: Restore production signing key
+        run: |
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$OUEDNA_KEYSTORE_PATH"
+          test -s "$OUEDNA_KEYSTORE_PATH"
+          chmod 600 "$OUEDNA_KEYSTORE_PATH"
+      - name: Restore optional Firebase configuration
+        run: |
+          temporary_config="$(mktemp)"
+          if [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "Firebase configuration is absent; continuing without optional Firebase services."
+          elif printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > "$temporary_config" 2>/dev/null \
+            && jq -e '.project_info.project_number and .client[0].client_info.android_client_info.package_name == "com.ouedna.app.v2"' "$temporary_config" >/dev/null; then
+            mv "$temporary_config" android/app/google-services.json
+            chmod 600 android/app/google-services.json
+          else
+            rm -f "$temporary_config"
+            echo "Firebase configuration is absent or invalid; continuing without optional Firebase services."
+          fi
+      - name: Resolve dependencies and test
+        run: |
+          flutter pub get
+          dart format --set-exit-if-changed lib test
+          flutter analyze --fatal-infos
+          flutter test
+      - name: Build signed POC APK
+        run: >-
+          flutter build apk --flavor direct --release
+          --build-name 2.1.6-organicmaps-poc
+          --build-number 38
+          --dart-define=OUEDNA_DIRECT_BUILD=true
+          --dart-define=SUPABASE_URL="$SUPABASE_URL"
+          --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
+      - name: Verify APK can update production package
+        run: |
+          APK="build/app/outputs/flutter-apk/app-direct-release.apk"
+          test -s "$APK"
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | tee /tmp/apk-badging.txt
+          grep -q "package: name='com.ouedna.app.v2' versionCode='38' versionName='2.1.6-organicmaps-poc'" /tmp/apk-badging.txt
+          sha256sum "$APK" | tee /tmp/apk-sha256.txt
+      - name: Upload POC APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ouedna-2.1.6-organicmaps-poc
+          path: build/app/outputs/flutter-apk/app-direct-release.apk
+          if-no-files-found: error
+          retention-days: 14
