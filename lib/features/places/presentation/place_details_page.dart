@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/localization/ouedna_localization.dart';
+import '../../routing/data/organic_maps_launcher.dart';
 import '../../../core/storage/favorites_controller.dart';
 import '../../community/domain/repositories/community_repository.dart';
 import '../../routing/domain/routing_service.dart';
@@ -301,10 +302,52 @@ class _Actions extends StatelessWidget {
                       ),
                     ),
             icon: const Icon(Icons.route_rounded, size: 20),
-            label: const Text('ابدأ المسار'),
+            label: const Text('ابدأ المسار داخل وادنا'),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 46),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed:
+                !place.hasCoordinates ? null : () => _openOrganicMaps(context),
+            icon: const Icon(Icons.offline_bolt_rounded, size: 20),
+            label: const Text('ملاحة غير متصلة عبر Organic Maps'),
           ),
         ],
       );
+
+  Future<void> _openOrganicMaps(BuildContext context) async {
+    final result = await OrganicMapsLauncher.launchToPlace(place);
+    if (!context.mounted) return;
+
+    switch (result) {
+      case OrganicMapsLaunchResult.launched:
+        return;
+      case OrganicMapsLaunchResult.unavailable:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'تطبيق Organic Maps غير مثبت. يمكنك تنزيله للملاحة غير المتصلة.',
+            ),
+            action: SnackBarAction(
+              label: 'تنزيل',
+              onPressed: () => OrganicMapsLauncher.openDownloadPage(),
+            ),
+          ),
+        );
+      case OrganicMapsLaunchResult.invalidDestination:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('إحداثيات هذه الوجهة غير مكتملة.')),
+        );
+      case OrganicMapsLaunchResult.failed:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح Organic Maps حالياً.')),
+        );
+    }
+  }
 }
 
 class _Gallery extends StatelessWidget {

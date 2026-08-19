@@ -64,5 +64,9 @@
         <intent>
             <action android:name="android.speech.tts.engine.TTS_SERVICE" />
         </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="om" />
+        </intent>
     </queries>
 </manifest>
