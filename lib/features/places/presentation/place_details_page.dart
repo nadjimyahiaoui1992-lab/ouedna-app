@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../core/localization/ouedna_localization.dart';
 import '../../routing/data/organic_maps_launcher.dart';
+import '../../routing/presentation/organic_maps_mode_picker.dart';
 import '../../../core/storage/favorites_controller.dart';
 import '../../community/domain/repositories/community_repository.dart';
 import '../../routing/domain/routing_service.dart';
@@ -320,7 +321,12 @@ class _Actions extends StatelessWidget {
       );
 
   Future<void> _openOrganicMaps(BuildContext context) async {
-    final result = await OrganicMapsLauncher.launchToPlace(place);
+    final mode = await showOrganicMapsModePicker(context);
+    if (mode == null || !context.mounted) return;
+    final result = await OrganicMapsLauncher.launchToPlace(
+      place,
+      mode: mode,
+    );
     if (!context.mounted) return;
 
     switch (result) {

@@ -10,7 +10,9 @@ import '../../../core/widgets/offline_catalogue_notice.dart';
 import '../../places/domain/entities/place.dart';
 import '../../places/domain/repositories/place_repository.dart';
 import '../../places/presentation/place_details_page.dart';
+import '../../routing/data/organic_maps_launcher.dart';
 import '../../routing/domain/routing_service.dart';
+import '../../routing/presentation/organic_maps_mode_picker.dart';
 import '../domain/compass_planner.dart';
 import '../domain/itinerary_models.dart';
 
@@ -175,6 +177,43 @@ class _CompassPageState extends State<CompassPage> {
         ),
       );
 
+  Future<void> _openOrganicMapsItinerary() async {
+    final itinerary = _itinerary;
+    if (itinerary == null || itinerary.isEmpty) return;
+    final mode = await showOrganicMapsModePicker(context);
+    if (!mounted || mode == null) return;
+    final result = await OrganicMapsLauncher.launchItinerary(
+      itinerary,
+      mode: mode,
+    );
+    if (!mounted) return;
+    switch (result) {
+      case OrganicMapsLaunchResult.launched:
+        return;
+      case OrganicMapsLaunchResult.unavailable:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'تطبيق Organic Maps غير مثبت. يمكنك تنزيله للملاحة غير المتصلة.',
+            ),
+            action: SnackBarAction(
+              label: 'تنزيل',
+              onPressed: () => OrganicMapsLauncher.openDownloadPage(),
+            ),
+          ),
+        );
+      case OrganicMapsLaunchResult.invalidDestination:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('لا توجد إحداثيات كافية لمحطات الرحلة.')),
+        );
+      case OrganicMapsLaunchResult.failed:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح الرحلة في Organic Maps.')),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
@@ -310,6 +349,7 @@ class _CompassPageState extends State<CompassPage> {
                   _ItineraryResult(
                     itinerary: _itinerary!,
                     onOpenPlace: _openPlace,
+                    onOpenOrganicMaps: _openOrganicMapsItinerary,
                     onMap: widget.onMap,
                   ),
                 ],
@@ -482,11 +522,13 @@ class _ItineraryResult extends StatelessWidget {
   const _ItineraryResult({
     required this.itinerary,
     required this.onOpenPlace,
+    required this.onOpenOrganicMaps,
     required this.onMap,
   });
 
   final CompassItinerary itinerary;
   final ValueChanged<Place> onOpenPlace;
+  final VoidCallback onOpenOrganicMaps;
   final VoidCallback onMap;
 
   @override
@@ -509,6 +551,15 @@ class _ItineraryResult extends StatelessWidget {
         const SizedBox(height: 4),
         const Text(
             'الأوقات تقديرية حسب الإحداثيات المنشورة. تحقّق من ساعات العمل قبل الانطلاق.'),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: onOpenOrganicMaps,
+            icon: const Icon(Icons.offline_bolt_rounded),
+            label: const Text('فتح الرحلة كاملة في Organic Maps'),
+          ),
+        ),
         const SizedBox(height: 14),
         ...itinerary.stops.map(
           (stop) => Padding(

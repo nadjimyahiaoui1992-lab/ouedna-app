@@ -40,6 +40,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="ouedna-v2" android:host="place" />
             </intent-filter>
+            <!-- Organic Maps callback after route completion or returning to Ouedna -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="ouedna-v2" android:host="organicmaps" />
+            </intent-filter>
 
             <!-- https://ouedna.vercel.app/place/123 -->
             <intent-filter android:autoVerify="true">

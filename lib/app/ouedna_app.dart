@@ -54,6 +54,7 @@ class OuednaApp extends StatefulWidget {
 
 class _OuednaAppState extends State<OuednaApp> {
   final _navigatorKey = GlobalKey<NavigatorState>();
+  final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
   StreamSubscription<void>? _updateActionSubscription;
@@ -142,6 +143,15 @@ class _OuednaAppState extends State<OuednaApp> {
   }
 
   void _handleDeepLink(Uri uri) {
+    if (uri.scheme == 'ouedna-v2' && uri.host == 'organicmaps') {
+      _scaffoldMessengerKey.currentState
+        ?..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+              content: Text('تمت العودة من Organic Maps إلى وادنا.')),
+        );
+      return;
+    }
     final placeId = _placeIdFromUri(uri);
     if (placeId == null || _openingPlaceId == placeId) return;
     setState(() {
@@ -412,6 +422,7 @@ class _OuednaAppState extends State<OuednaApp> {
 
             return MaterialApp(
               navigatorKey: _navigatorKey,
+              scaffoldMessengerKey: _scaffoldMessengerKey,
               title: strings.appName,
               debugShowCheckedModeBanner: false,
               locale: language.locale,
