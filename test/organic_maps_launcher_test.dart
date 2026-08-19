@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:ouedna/features/routing/data/organic_maps_launcher.dart';
+import 'package:ouedna_app/features/routing/data/organic_maps_launcher.dart';
 
 void main() {
   test('builds an Organic Maps navigation deep link', () {
